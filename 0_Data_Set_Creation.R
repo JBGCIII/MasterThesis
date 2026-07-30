@@ -183,7 +183,7 @@ household_financial_accounts_raw <- download_pxweb(
 
 write_csv(
   household_financial_accounts_raw,
-  "Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv"
+  "Raw_Data/4b_SCB_household_financial_accounts_full_quarterly.csv"
 )
 
 
@@ -251,7 +251,8 @@ write_csv(reference_rate,"Raw_Data/10_Riksbank_reference_rate_daily.csv")
 
 
 
+meta_fa <- pxweb_get(
+  "https://api.scb.se/OV0104/v1/doris/en/ssd/FM/FM0103/FM0103A/FirENS2010ofKv"
+)
 
-
-
-
+meta_fa$variables
