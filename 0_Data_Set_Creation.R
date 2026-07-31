@@ -9,32 +9,20 @@ install.packages(c("pxweb", "httr", "httr2", "jsonlite", "dplyr", "tidyr", "lubr
 # Raw data only
 # ============================================================
 
-
-# ------------------------------------------------------------
 # Packages
-# ------------------------------------------------------------
-
 library(pxweb)
 library(httr)
 library(jsonlite)
 library(dplyr)
 library(readr)
 
-
-# ------------------------------------------------------------
 # Settings
-# ------------------------------------------------------------
-
 dir.create(
   "Raw_Data",
   showWarnings = FALSE
 )
 
-# ------------------------------------------------------------
 # Helper functions
-# ------------------------------------------------------------
-
-
 # SCB PXWEB downloader
 download_pxweb <- function(url, query){
 
@@ -82,7 +70,7 @@ get_riksbank_series <- function(series_id,
 
 
 # ============================================================
-# SCB GDP
+# 1_SCB_gdp_expenditures_real_quarterly
 # ============================================================
 
 
@@ -106,7 +94,7 @@ write_csv(
 )
 
 # ============================================================
-# SCB Household Consumption
+# 2_SCB_household_consumption_real_quarterly
 # ============================================================
 
 url_consumption_level <- paste0(
@@ -135,7 +123,7 @@ write_csv(
 
 
 # ============================================================
-# SCB Household sector indicators
+# 3_SCB_household_sector_indicators
 # ============================================================
 
 
@@ -162,8 +150,7 @@ write_csv(
 
 
 # ============================================================
-# SCB Household Financial Accounts
-# Full raw dataset
+# 4_SCB_household_financial_accounts_full_quarterly
 # ============================================================
 
 url_fa_esa2010_quarterly <- paste0(
@@ -187,30 +174,9 @@ write_csv(
 )
 
 
-# ============================================================
-# SCB Housing Price Index
-# ============================================================
-
-url_hpi_quarterly <- 
-  "https://api.scb.se/OV0104/v1/doris/en/ssd/BO/BO0501/BO0501A/FastpiPSRegKv"
-
-hpi_all <- download_pxweb(
-  url_hpi_quarterly,
-  list(
-    Region = "*",
-    ContentsCode = "BO0501K2",
-    Tid = "*" #Available back to 1986K1
-  )
-)
-
-write_csv(
-  hpi_all,
-  "Raw_Data/5_SCB_house_price_index_quarterly_all_regions.csv"
-)
-
 
 # ============================================================
-# SCB CPI
+# 5_SCB_CPI_monthly
 # ============================================================
 
 url_cpi <- paste0(
@@ -228,8 +194,33 @@ cpi <- download_pxweb(
 
 write_csv(
   cpi,
-  "Raw_Data/6_SCB_CPI_monthly.csv"
+  "Raw_Data/5_SCB_CPI_monthly.csv"
 )
+
+
+
+
+# ============================================================
+# 6_SCB_house_price_index_quarterly_all_regions
+# ============================================================
+
+url_hpi_quarterly <- 
+  "https://api.scb.se/OV0104/v1/doris/en/ssd/BO/BO0501/BO0501A/FastpiPSRegKv"
+
+hpi_all <- download_pxweb(
+  url_hpi_quarterly,
+  list(
+    Region = "*",
+    ContentsCode = "BO0501K2",
+    Tid = "*" #Available back to 1986K1
+  )
+)
+
+write_csv(
+  hpi_all,
+  "Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv"
+)
+
 
 
 
@@ -238,21 +229,11 @@ write_csv(
 # ============================================================
 
 repo_rate <- get_riksbank_series("SECBREPOEFF")
-deposit_rate <- get_riksbank_series("SECBDEPOEFF")
-lending_rate <- get_riksbank_series("SECBLENDEFF")
-reference_rate <- get_riksbank_series("SECBREFEFF")
+#deposit_rate <- get_riksbank_series("SECBDEPOEFF")
+#lending_rate <- get_riksbank_series("SECBLENDEFF")
+#reference_rate <- get_riksbank_series("SECBREFEFF")
 
 write_csv(repo_rate,"Raw_Data/7_Riksbank_policy_rate_daily.csv")
-write_csv(deposit_rate,"Raw_Data/8_Riksbank_deposit_rate_daily.csv")
-write_csv(lending_rate,"Raw_Data/9_Riksbank_lending_rate_daily.csv")
-write_csv(reference_rate,"Raw_Data/10_Riksbank_reference_rate_daily.csv")
-
-
-
-
-
-meta_fa <- pxweb_get(
-  "https://api.scb.se/OV0104/v1/doris/en/ssd/FM/FM0103/FM0103A/FirENS2010ofKv"
-)
-
-meta_fa$variables
+#write_csv(deposit_rate,"Raw_Data/8_Riksbank_deposit_rate_daily.csv")
+#write_csv(lending_rate,"Raw_Data/9_Riksbank_lending_rate_daily.csv")
+#write_csv(reference_rate,"Raw_Data/10_Riksbank_reference_rate_daily.csv")
