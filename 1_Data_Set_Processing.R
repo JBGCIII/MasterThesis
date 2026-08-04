@@ -37,8 +37,8 @@ dir.create(
 #                   1_SCB_Real_Growth_Rate (GDP & Consumption) Seasonal_Adjusted            #
 
 # Load GDP and Consumption Growth (Already Transformed by SCB. No need to process)
-gdp_growth <- read_csv("Raw_Data/1_SCB_gdp_growth_quarterly.csv")
-consumption_growth <- read_csv("Raw_Data/2_SCB_household_consumption_real_quarterly.csv"
+gdp_growth_seasonal_adjust <- read_csv("Raw_Data/1_SCB_gdp_growth_quarterly.csv")
+consumption_growth_seasonal_adjust <- read_csv("Raw_Data/2_SCB_household_consumption_real_quarterly.csv"
 )
 
 
@@ -313,13 +313,13 @@ write_csv(
 macro_households <-
 
   list(
-     gdp_growth %>%
+    gdp_growth_seasonal_adjust %>%
     select(
       quarter,
       gdp_growth
     ),
 
-  consumption_growth %>%
+  consumption_growth_seasonal_adjust %>%
     select(
       quarter,
       consumption_growth
