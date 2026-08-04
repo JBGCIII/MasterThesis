@@ -178,7 +178,7 @@ household_indicators <- sector %>%
 #                                  6_CPI quarterly inflation                                                
 
 cpi <- read_csv(
-  "Raw_Data/SCB_CPI_monthly.csv"
+  "Raw_Data/5_SCB_CPI_monthly.csv"
 )
 
 cpi_quarterly <- cpi %>%
