@@ -1,40 +1,42 @@
 
+#####################################0.DATA_SET_CREATION######################################
+##                                                                                           #
 
 
+# ==========================================0.Packages=======================================#
 
-install.packages(c("pxweb", "httr", "httr2", "jsonlite", "dplyr", "tidyr", "lubridate","readr"))
+#citation("Insert package here") --> See Appendix Thesis
+#packageVersion("Insert package here") 
 
-# ============================================================
-# Swedish macro database collection
-# Raw data only
-# ============================================================
+packages_data_set_creation <- c(
+  "tidyverse", # Version '2.0.0' - Data wrangling, transformation, and plotting
+  "pxweb",     # Version '0.17.0' - API data extraction from national statistics database (SCB)
+  "httr",      # Version '1.4.8' - Tools for working with HTTP organized by HTTP verbs
+  "jsonlite" )  # Version '2.0.0' - Parsing raw API JSON payloads
 
-# Packages
-library(pxweb)
-library(httr)
-library(jsonlite)
-library(dplyr)
-library(readr)
+# Install missing packages
+install.packages(setdiff(packages_data_set_creation , rownames(installed.packages())))
 
-# Settings
-dir.create(
-  "Raw_Data",
-  showWarnings = FALSE
-)
+# Load them all at once
+lapply(packages_data_set_creation , library, character.only = TRUE)
+
+
+# ==========================================0.Functions=======================================#
 
 # Helper functions
 # SCB PXWEB downloader
 download_pxweb <- function(url, query){
 
-  pxq <- pxweb_query(query)
+  pxq <- pxweb_query(query) # Converts list into a valid PX-Web query object.
 
-  pxweb_get_data(
+  pxweb_get_data( # Executes the HTTP call to SCB and retrieves the data
     url = url,
     query = pxq,
     column.name.type = "text",
     variable.value.type = "text"
   )
 }
+
 
 
 # Riksbank SWEA downloader
@@ -68,64 +70,88 @@ get_riksbank_series <- function(series_id,
 }
 
 
+# ==========================================0.Directory=======================================#
 
-# ============================================================
-# 1_SCB_gdp_expenditures_real_quarterly
-# ============================================================
-
-
-url_gdp_level <- paste0(
-  "https://api.scb.se/OV0104/v1/doris/en/ssd/",
-  "NR/NR0103/NR0103A/NR0103ENS2010T01Kv"
+dir.create(
+  "Raw_Data",
+  showWarnings = FALSE
 )
 
-gdp_all <- download_pxweb(
-  url_gdp_level,
+##############################################################################################
+
+
+# ==========================================================================================#
+#                            1_SCB_gdp_expenditures_real_quarterly                          #
+
+#Note you can explore the SCB API by the following
+#pxweb_get(
+#  "https://api.scb.se/OV0104/v1/doris/en/ssd/NR/NR0103/NR0103C"
+#)
+
+url_gdp_sa <- paste0(
+  "https://api.scb.se/OV0104/v1/doris/en/ssd/",
+  "NR/NR0103/NR0103S/NR0103ENS10SnabbStat"
+)
+
+#meta_gdp_sa <- pxweb_get(url_gdp_sa)
+#meta_gdp_sa$variables
+#This code allows you to explore the available variables
+#We want the seasonally adjusted one.
+
+gdp_sa <- download_pxweb(
+  url_gdp_sa,
   list(
-    Anvandningstyp = "*",
-    ContentsCode = "NR0103BW",
-    Tid = "*" # Available from 1981K1
+    EkoIndikator = "BNP10",
+    # "BNP10"	- GDP at market prices
+    ContentsCode = "NR0103A¤",
+    #"NR0103A!" - "Change in volume corresponding quarter previous year, percent"
+    #"NR0103A¤" - "Seasonally adjusted, change in volume, previous quarter, percent"
+    Tid = "*" # "*" - All available data. We would cut this in data processing.
   )
 )
 
+gdp_sa <- gdp_sa %>%
+  rename(
+    gdp_growth = 
+      `Seasonally adjusted, change in volume, previous quarter, percent`
+  )
+
 write_csv(
-  gdp_all,
-  "Raw_Data/1_SCB_gdp_expenditures_real_quarterly.csv"
+  gdp_sa,
+  "Raw_Data/1_SCB_gdp_growth_quarterly.csv"
 )
 
-# ============================================================
-# 2_SCB_household_consumption_real_quarterly
-# ============================================================
 
-url_consumption_level <- paste0(
-  "https://api.scb.se/OV0104/v1/doris/en/ssd/",
-  "NR/NR0103/NR0103A/NR0103ENS2010T02KvN"
-)
+# ==========================================================================================#
+#                            2_SCB_household_consumption_real_quarterly                      
 
-meta_consumption <- pxweb_get(
-  url_consumption_level
-)
 
-# All household consumption categories
-consumption_all <- download_pxweb(
-  url_consumption_level,
+consumption_growth <- download_pxweb(
+  url_gdp_sa,
   list(
-    Andamal = "*",
-    ContentsCode = "0000079H",
-    Tid = "*" # Available back to 1981K1
+    EkoIndikator = "BNP30",
+    ContentsCode = "NR0103A¤",
+    Tid = "*"
   )
 )
 
+consumption_growth <- consumption_growth %>%
+  rename(
+    consumption_growth =
+      `Seasonally adjusted, change in volume, previous quarter, percent`
+  )
+
+
 write_csv(
-  consumption_all,
+  consumption_growth,
   "Raw_Data/2_SCB_household_consumption_real_quarterly.csv"
 )
 
 
-# ============================================================
-# 3_SCB_household_sector_indicators
-# ============================================================
 
+
+# ==========================================================================================#
+#                            3_SCB_household_sector_indicators                     
 
 url_sector_indicators <- paste0(
   "https://api.scb.se/OV0104/v1/doris/en/ssd/",
@@ -149,9 +175,9 @@ write_csv(
 
 
 
-# ============================================================
-# 4_SCB_household_financial_accounts_full_quarterly
-# ============================================================
+# ==========================================================================================#
+#                            4_SCB_household_financial_accounts_full_quarterly                  
+
 
 url_fa_esa2010_quarterly <- paste0(
   "https://api.scb.se/OV0104/v1/doris/en/ssd/",
@@ -170,14 +196,13 @@ household_financial_accounts_raw <- download_pxweb(
 
 write_csv(
   household_financial_accounts_raw,
-  "Raw_Data/4b_SCB_household_financial_accounts_full_quarterly.csv"
+  "Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv"
 )
 
 
 
-# ============================================================
-# 5_SCB_CPI_monthly
-# ============================================================
+# ==========================================================================================#
+#                                       5_SCB_CPI_monthly                
 
 url_cpi <- paste0(
   "https://api.scb.se/OV0104/v1/doris/en/ssd/",
@@ -199,10 +224,8 @@ write_csv(
 
 
 
-
-# ============================================================
-# 6_SCB_house_price_index_quarterly_all_regions
-# ============================================================
+# ==========================================================================================#
+#                                       6_SCB_house_price_index_quarterly_all_regions              
 
 url_hpi_quarterly <- 
   "https://api.scb.se/OV0104/v1/doris/en/ssd/BO/BO0501/BO0501A/FastpiPSRegKv"
@@ -222,11 +245,9 @@ write_csv(
 )
 
 
+# ==========================================================================================#
+#                                       7_Riksbank interest rates            
 
-
-# ============================================================
-# Riksbank interest rates
-# ============================================================
 
 repo_rate <- get_riksbank_series("SECBREPOEFF")
 #deposit_rate <- get_riksbank_series("SECBDEPOEFF")
@@ -237,3 +258,5 @@ write_csv(repo_rate,"Raw_Data/7_Riksbank_policy_rate_daily.csv")
 #write_csv(deposit_rate,"Raw_Data/8_Riksbank_deposit_rate_daily.csv")
 #write_csv(lending_rate,"Raw_Data/9_Riksbank_lending_rate_daily.csv")
 #write_csv(reference_rate,"Raw_Data/10_Riksbank_reference_rate_daily.csv")
+
+

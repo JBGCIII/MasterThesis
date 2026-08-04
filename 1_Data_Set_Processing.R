@@ -1,4 +1,27 @@
 
+#####################################1.DATA_SET_PROCESSING####################################
+##                                                                                           #
+
+# ==========================================0.Packages=======================================#
+
+#citation("Insert package here") --> See Appendix Thesis
+#packageVersion("Insert package here") 
+
+packages_data_set_processing <- c(
+    "dplyr", # Version '1.1.4' Data manipulation and transformation
+    "readr", # Version '2.1.5' Fast file reading and writing
+    "lubridate", # Version '1.9.5' Wrangling date and time objects
+    "tidyr", # Version '1.3.2' Reshaping data matrices
+    "purrr") # Version '1.0.4' Functional programming and iteration toolset
+
+# Install missing packages
+install.packages(setdiff(packages_data_set_processing , rownames(installed.packages())))
+
+# Load them all at once
+lapply(packages_data_set_processing , library, character.only = TRUE)
+
+# ==========================================0.Directory=======================================#
+
 
 dir.create(
   "Processed_Data",
@@ -10,97 +33,25 @@ dir.create(
   showWarnings = FALSE
 )
 
+# ==========================================================================================#
+#                   1_SCB_Real_Growth_Rate (GDP & Consumption) Seasonal_Adjusted            #
 
-library(dplyr)
-library(readr)
-library(lubridate)
-library(tidyr)
-library(purrr)
-
-
-
-# ============================================================
-# 1_real_gdp_growth
-# ============================================================
-
-# Load GDP
-gdp <- read_csv(
-  "Raw_Data/1_SCB_gdp_expenditures_real_quarterly.csv"
-)
-
-# Extract GDP at market prices
-gdp_real <- gdp %>%
-  filter(
-    `type of use` == "- GDP at market prices"
-  ) %>%
-  select(
-    quarter,
-    `Constant prices, reference year 2025, SEK million`
-  ) %>%
-  rename(
-    gdp_real_sek_million =
-      `Constant prices, reference year 2025, SEK million`
-  )
-
-# Calculate growth
-gdp_real <- gdp_real %>%
-  mutate(
-    gdp_growth =
-      100 * (
-        log(gdp_real_sek_million) -
-        lag(log(gdp_real_sek_million))
-      )
-  )
-
-# Save
-write_csv(
-  gdp_real,
-  "Processed_Data/Data_Set_Columns/1b_real_gdp_growth.csv"
+# Load GDP and Consumption Growth (Already Transformed by SCB. No need to process)
+gdp_growth <- read_csv("Raw_Data/1_SCB_gdp_growth_quarterly.csv")
+consumption_growth <- read_csv("Raw_Data/2_SCB_household_consumption_real_quarterly.csv"
 )
 
 
-# ============================================================
-# 2_household_consumption
-# ============================================================
-
-consumption <- read_csv(
-  "Raw_Data/2_SCB_household_consumption_real_quarterly.csv"
-)
-
-household_consumption <- consumption %>%
-  filter(
-    purpose == "household total consumption expenditure"
-  ) %>%
-  select(
-    quarter,
-    `Constant prices reference year 2025, SEK million`
-  ) %>%
-  rename(
-    consumption_real_sek_million =
-      `Constant prices reference year 2025, SEK million`
-  ) %>%
-  arrange(quarter) %>%
-  mutate(
-    consumption_growth = 100 * (
-      log(consumption_real_sek_million) -
-      lag(log(consumption_real_sek_million))
-    )
-  )
-
-write_csv(
-  household_consumption,
-  "Processed_Data/Data_Set_Columns/2b_household_consumption.csv"
-)
-
-
-# ============================================================
-# 3_household_debt
-# ============================================================
+# ==========================================================================================#
+#                                       3_household_debt_growth                             #
 
 #There are two options here
-#One is using Total Liabilities
-#The other is to use Total Loans
+#(1) Using Total Liabilities
+#(2) Use Total Loans
 #I am torn with regard to which of the two so I should used.
+#Using total loans will be more in line with Svenson, while
+#Total liabilities will help ascertain how the recent growth of
+#consumer credit might shake the economy.
 
 
 fa <- read_csv(
@@ -111,7 +62,6 @@ fa <- read_csv(
 household_debt <- fa %>%
   filter(
     item == "Liabilities (FL)"
-    
   )
 
 household_debt <- household_debt %>%
@@ -122,7 +72,6 @@ household_debt <- household_debt %>%
   rename(
     debt_sek_million = Balances
   )
-
 
   household_debt <- household_debt %>%
   mutate(
@@ -139,6 +88,9 @@ household_debt <- household_debt %>%
 )
 
 
+# ==========================================================================================#
+#                                   4_Asset_liability_ratio                                                 
+
 # Extract assets and liabilities
 financial_balance_sheet <- fa %>%
   filter(
@@ -152,7 +104,6 @@ financial_balance_sheet <- fa %>%
     item,
     Balances
   )
-
 
 # Reshape
 financial_balance_sheet <- financial_balance_sheet %>%
@@ -176,14 +127,14 @@ financial_asset_ratio <- financial_balance_sheet %>%
 # Save
 write_csv(
   financial_asset_ratio,
-  "Processed_Data/Data_Set_Columns/4b_financial_asset_liability_ratio.csv"
+  "Processed_Data/Data_Set_Columns/4_financial_asset_liability_ratio.csv"
 )
 
 
 
-# ============================================================
-# 5_household_indicators
-# ============================================================
+# ==========================================================================================#
+#                                  5_Asset_liability_ratio                                                 
+
 
 sector <- read_csv(
   "Raw_Data/3_SCB_household_sector_indicators.csv"
@@ -223,15 +174,12 @@ household_indicators <- sector %>%
 
 
 
-
-# ============================================================
-# 6_CPI quarterly inflation
-# ============================================================
+# ==========================================================================================#
+#                                  6_CPI quarterly inflation                                                
 
 cpi <- read_csv(
   "Raw_Data/SCB_CPI_monthly.csv"
 )
-
 
 cpi_quarterly <- cpi %>%
   mutate(
@@ -264,13 +212,12 @@ cpi_quarterly <- cpi_quarterly %>%
 
 write_csv(
   cpi_quarterly,
-  "Processed_Data/Data_Set_Columns/6b_inflation_quarterly.csv"
+  "Processed_Data/Data_Set_Columns/6_inflation_quarterly.csv"
 )
 
 
-# ============================================================
-# 7b_real_house_price_growth
-# ============================================================
+# ==========================================================================================#
+#                                  7_real_house_price_growth                                               
 
 hpi <- read_csv(
   "Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv"
@@ -321,13 +268,14 @@ real_house_prices <- hpi_sweden %>%
 
 write_csv(
   real_house_prices,
-  "Processed_Data/Data_Set_Columns/7b_real_house_price_growth.csv"
+  "Processed_Data/Data_Set_Columns/7_real_house_price_growth.csv"
 )
 
 
-# ============================================================
-# 8_policy_rate
-# ============================================================
+
+# ==========================================================================================#
+#                                  7_Policy_Rate                                             
+
 
 repo_rate <- read_csv(
   "Raw_Data/7_Riksbank_policy_rate_daily.csv"
@@ -354,27 +302,28 @@ policy_rate_quarterly <- repo_rate %>%
 
 write_csv(
   policy_rate_quarterly,
-  "Processed_Data/Data_Set_Columns/8b_policy_rate_quarterly.csv"
+  "Processed_Data/Data_Set_Columns/8_policy_rate_quarterly.csv"
 )
 
-# ============================================================
-# Final Data Set
-# ============================================================
+
+# ==========================================================================================#
+#                                       Final_Data_Set           
+# ==========================================================================================#
 
 macro_households <-
 
   list(
-    gdp_real %>%
-      select(
-        quarter,
-        gdp_growth
-      ),
+     gdp_growth %>%
+    select(
+      quarter,
+      gdp_growth
+    ),
 
-    household_consumption %>%
-      select(
-        quarter,
-        consumption_growth
-      ),
+  consumption_growth %>%
+    select(
+      quarter,
+      consumption_growth
+    ),
 
     household_debt %>%
       select(

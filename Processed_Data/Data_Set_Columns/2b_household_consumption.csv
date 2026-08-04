@@ -1,186 +1,182 @@
-quarter,consumption_real_sek_million,consumption_growth
-1980K1,NA,NA
-1980K2,NA,NA
-1980K3,NA,NA
-1980K4,NA,NA
-1981K1,324665,NA
-1981K2,332471,2.3758756756057764
-1981K3,309727,-7.0861373924937965
-1981K4,347771,11.585295286803543
-1982K1,329173,-5.496076876177902
-1982K2,334989,1.7514247036663377
-1982K3,311161,-7.378723235096274
-1982K4,353386,12.725048081984447
-1983K1,319904,-9.953999314917539
-1983K2,324163,1.3225524921766763
-1983K3,304792,-6.161689895765576
-1983K4,344906,12.364233938936664
-1984K1,329274,-4.63816852329213
-1984K2,332330,0.9238220247830498
-1984K3,309232,-7.203664691004441
-1984K4,346915,11.498798892460194
-1985K1,339257,-2.232186091468691
-1985K2,343250,1.170111239505367
-1985K3,316350,-8.160984905518731
-1985K4,355441,11.65100764451612
-1986K1,347933,-2.1349339535248646
-1986K2,358713,3.051269336365081
-1986K3,338545,-5.786560291109133
-1986K4,379234,11.34964058533221
-1987K1,369327,-2.6470998331037165
-1987K2,384858,4.119200460635675
-1987K3,350223,-9.430434063274085
-1987K4,397431,12.645123966985672
-1988K1,391291,-1.5569805424824779
-1988K2,391190,-0.025815323454736472
-1988K3,362657,-7.573589148097248
-1988K4,402675,10.467230099596492
-1989K1,390068,-3.180870207745201
-1989K2,398235,2.0721200398103434
-1989K3,365025,-8.70764389097669
-1989K4,409610,11.523964310215185
-1990K1,387058,-5.663093488847082
-1990K2,396491,2.407878960311294
-1990K3,361835,-9.146503539252215
-1990K4,391954,7.995617915409703
-1991K1,381150,-2.795148753171439
-1991K2,392762,3.001083202208754
-1991K3,363491,-7.744929307404291
-1991K4,400848,9.782776569665685
-1992K1,375186,-6.616040007591373
-1992K2,386674,3.0160057766629222
-1992K3,360963,-6.880650076438499
-1992K4,389174,7.525108437517147
-1993K1,347624,-11.290510849356572
-1993K2,364224,4.664762709373882
-1993K3,357557,-1.8474272996451546
-1993K4,394014,9.709165167736877
-1994K1,359841,-9.072417444153658
-1994K2,369738,2.7132379483161273
-1994K3,362977,-1.8455175327277473
-1994K4,398496,9.33579891628149
-1995K1,363011,-9.32643237027122
-1995K2,376787,3.7246904209435883
-1995K3,369311,-2.004093354876524
-1995K4,401403,8.332680267916714
-1996K1,369694,-8.229027374014386
-1996K2,384972,4.049496793458118
-1996K3,379707,-1.377070169542094
-1996K4,410393,7.77153345060011
-1997K1,380150,-7.654932550643601
-1997K2,403729,6.0177949125829855
-1997K3,387233,-4.171728175676392
-1997K4,424612,9.21492317198318
-1998K1,390851,-8.284939757398746
-1998K2,414669,5.915419843547376
-1998K3,402442,-2.992962452840686
-1998K4,442337,9.452104790784688
-1999K1,408505,-7.956788087703792
-1999K2,430521,5.249194903862886
-1999K3,418426,-2.8496050854453614
-1999K4,470374,11.702807063660714
-2000K1,436543,-7.46412416382185
-2000K2,459737,5.176770553776855
-2000K3,445140,-3.2265747418074753
-2000K4,481467,7.844885363445897
-2001K1,445644,-7.731726605816469
-2001K2,462691,3.75390176698005
-2001K3,447969,-3.2335411083353804
-2001K4,480439,6.997623566653388
-2002K1,452328,-6.0292688876327105
-2002K2,473035,4.476180114361483
-2002K3,458068,-3.215173681696548
-2002K4,493177,7.385049126822807
-2003K1,455089,-8.037513175880484
-2003K2,476910,4.683478962238041
-2003K3,467614,-1.9684624571413067
-2003K4,504214,7.535761185807566
-2004K1,470948,-6.825309660306544
-2004K2,490128,3.991889695680406
-2004K3,480438,-1.9968393654385963
-2004K4,518491,7.622448192925191
-2005K1,477070,-8.325943911051148
-2005K2,507478,6.179012957697516
-2005K3,500805,-1.3236556461013294
-2005K4,535785,6.751615743630168
-2006K1,491950,-8.535587588613502
-2006K2,523158,6.150643637962894
-2006K3,511203,-2.3116750100696137
-2006K4,553692,7.9841803876657735
-2007K1,514191,-7.401378370590628
-2007K2,545681,5.943976415919572
-2007K3,538709,-1.2859019486773704
-2007K4,576371,6.7576014142645136
-2008K1,526972,-8.960413437645265
-2008K2,558816,5.867284355736224
-2008K3,532121,-4.894935266814393
-2008K4,555929,4.376968116550017
-2009K1,520644,-6.557408140175625
-2009K2,561630,7.577676323525218
-2009K3,543383,-3.302885809037903
-2009K4,573886,5.4616358325043635
-2010K1,544919,-5.179361055853882
-2010K2,582918,6.740936489265792
-2010K3,565511,-3.0316777477525036
-2010K4,596310,5.303091889107137
-2011K1,560565,-6.181546239634272
-2011K2,600531,6.886906016026906
-2011K3,572521,-4.776484785618074
-2011K4,602662,5.130709291283786
-2012K1,568788,-5.784872767112859
-2012K2,602098,5.6912441537456004
-2012K3,580240,-3.697841170237126
-2012K4,612722,5.4469514674552855
-2013K1,575516,-6.2644296042856595
-2013K2,614262,6.515451754314583
-2013K3,593889,-3.3729114016351147
-2013K4,627766,5.547505235268169
-2014K1,590079,-6.191105932505714
-2014K2,633781,7.144704265518875
-2014K3,606965,-4.323234012542976
-2014K4,648340,6.594412133688721
-2015K1,616063,-5.106601907662522
-2015K2,659086,6.750479571545576
-2015K3,632816,-4.067432616288791
-2015K4,675378,6.50928335471832
-2016K1,633406,-6.416092738428425
-2016K2,673793,6.181133533230998
-2016K3,646136,-4.191293413823338
-2016K4,688241,6.312905935271829
-2017K1,659088,-4.328200604604859
-2017K2,687484,4.2181495295132265
-2017K3,657656,-4.435655827556673
-2017K4,700591,6.324226628191454
-2018K1,666354,-5.0103203689912945
-2018K2,708908,6.190469702779744
-2018K3,671355,-5.4427699715839495
-2018K4,711540,5.8133577033727235
-2019K1,666418,-6.55145339125891
-2019K2,708454,6.116802983100023
-2019K3,685513,-3.2917668040955306
-2019K4,719478,4.835848598829173
-2020K1,682770,-5.236789584657409
-2020K2,653008,-4.4568672874000015
-2020K3,663945,1.6609934370496404
-2020K4,694964,4.566073094161993
-2021K1,662348,-4.806894808793416
-2021K2,718099,8.081634497747814
-2021K3,711755,-0.887369147958772
-2021K4,756331,6.074535997547059
-2022K1,700813,-7.623802136903635
-2022K2,762242,8.40230008905074
-2022K3,718145,-5.959259204912648
-2022K4,749759,4.308032303858411
-2023K1,688113,-8.57987529256139
-2023K2,737490,6.929946016722255
-2023K3,705823,-4.3888030954626345
-2023K4,747405,5.724270904179463
-2024K1,696004,-7.125179944283921
-2024K2,745909,6.924820140456767
-2024K3,717986,-3.8153538598027836
-2024K4,756585,5.236481621622957
-2025K1,705715,-6.960341319521923
-2025K2,757581,7.0918989088022855
-2025K3,734638,-3.0752601480219965
-2025K4,773593,5.166803461452041
-2026K1,723053,-6.756337035136362
+economic indicator,quarter,consumption_growth
+Household consumption expenditure,1981K1,NA
+Household consumption expenditure,1981K2,0.7
+Household consumption expenditure,1981K3,0.3
+Household consumption expenditure,1981K4,0.1
+Household consumption expenditure,1982K1,0.2
+Household consumption expenditure,1982K2,0.3
+Household consumption expenditure,1982K3,0.1
+Household consumption expenditure,1982K4,0.9
+Household consumption expenditure,1983K1,-4.4
+Household consumption expenditure,1983K2,0.4
+Household consumption expenditure,1983K3,1.3
+Household consumption expenditure,1983K4,0.7
+Household consumption expenditure,1984K1,0
+Household consumption expenditure,1984K2,0.5
+Household consumption expenditure,1984K3,0.6
+Household consumption expenditure,1984K4,0.4
+Household consumption expenditure,1985K1,1.2
+Household consumption expenditure,1985K2,0.6
+Household consumption expenditure,1985K3,-0.1
+Household consumption expenditure,1985K4,1.1
+Household consumption expenditure,1986K1,1.6
+Household consumption expenditure,1986K2,1.7
+Household consumption expenditure,1986K3,2.2
+Household consumption expenditure,1986K4,0.9
+Household consumption expenditure,1987K1,0.8
+Household consumption expenditure,1987K2,3.9
+Household consumption expenditure,1987K3,-1.7
+Household consumption expenditure,1987K4,1.7
+Household consumption expenditure,1988K1,1.6
+Household consumption expenditure,1988K2,-0.4
+Household consumption expenditure,1988K3,0.6
+Household consumption expenditure,1988K4,-0.5
+Household consumption expenditure,1989K1,0.8
+Household consumption expenditure,1989K2,0.3
+Household consumption expenditure,1989K3,-0.1
+Household consumption expenditure,1989K4,0.5
+Household consumption expenditure,1990K1,-0.8
+Household consumption expenditure,1990K2,0.3
+Household consumption expenditure,1990K3,-0.9
+Household consumption expenditure,1990K4,-2.6
+Household consumption expenditure,1991K1,2.9
+Household consumption expenditure,1991K2,-0.2
+Household consumption expenditure,1991K3,-0.3
+Household consumption expenditure,1991K4,0
+Household consumption expenditure,1992K1,-0.3
+Household consumption expenditure,1992K2,-0.5
+Household consumption expenditure,1992K3,-1
+Household consumption expenditure,1992K4,-1.5
+Household consumption expenditure,1993K1,NA
+Household consumption expenditure,1993K2,1.1
+Household consumption expenditure,1993K3,0.4
+Household consumption expenditure,1993K4,0.2
+Household consumption expenditure,1994K1,1.3
+Household consumption expenditure,1994K2,-0.3
+Household consumption expenditure,1994K3,0
+Household consumption expenditure,1994K4,0.3
+Household consumption expenditure,1995K1,0.3
+Household consumption expenditure,1995K2,1.2
+Household consumption expenditure,1995K3,-0.3
+Household consumption expenditure,1995K4,-0.3
+Household consumption expenditure,1996K1,1.3
+Household consumption expenditure,1996K2,0.6
+Household consumption expenditure,1996K3,1.4
+Household consumption expenditure,1996K4,-0.4
+Household consumption expenditure,1997K1,1.7
+Household consumption expenditure,1997K2,1.3
+Household consumption expenditure,1997K3,-0.3
+Household consumption expenditure,1997K4,0.8
+Household consumption expenditure,1998K1,0.6
+Household consumption expenditure,1998K2,1.6
+Household consumption expenditure,1998K3,0.8
+Household consumption expenditure,1998K4,1
+Household consumption expenditure,1999K1,0.8
+Household consumption expenditure,1999K2,0.7
+Household consumption expenditure,1999K3,1
+Household consumption expenditure,1999K4,3.4
+Household consumption expenditure,2000K1,1.8
+Household consumption expenditure,2000K2,1.2
+Household consumption expenditure,2000K3,0.5
+Household consumption expenditure,2000K4,0
+Household consumption expenditure,2001K1,0.3
+Household consumption expenditure,2001K2,-0.1
+Household consumption expenditure,2001K3,0.3
+Household consumption expenditure,2001K4,-0.3
+Household consumption expenditure,2002K1,2
+Household consumption expenditure,2002K2,0.1
+Household consumption expenditure,2002K3,0.1
+Household consumption expenditure,2002K4,0.4
+Household consumption expenditure,2003K1,0.2
+Household consumption expenditure,2003K2,0.5
+Household consumption expenditure,2003K3,0.9
+Household consumption expenditure,2003K4,0.7
+Household consumption expenditure,2004K1,1.4
+Household consumption expenditure,2004K2,-0.5
+Household consumption expenditure,2004K3,0.9
+Household consumption expenditure,2004K4,0.6
+Household consumption expenditure,2005K1,1
+Household consumption expenditure,2005K2,0.6
+Household consumption expenditure,2005K3,1.8
+Household consumption expenditure,2005K4,0
+Household consumption expenditure,2006K1,0.3
+Household consumption expenditure,2006K2,1.3
+Household consumption expenditure,2006K3,0.6
+Household consumption expenditure,2006K4,1.4
+Household consumption expenditure,2007K1,0.9
+Household consumption expenditure,2007K2,1
+Household consumption expenditure,2007K3,1.9
+Household consumption expenditure,2007K4,0.6
+Household consumption expenditure,2008K1,-0.7
+Household consumption expenditure,2008K2,-0.3
+Household consumption expenditure,2008K3,-1
+Household consumption expenditure,2008K4,-1
+Household consumption expenditure,2009K1,1.1
+Household consumption expenditure,2009K2,1.3
+Household consumption expenditure,2009K3,0.5
+Household consumption expenditure,2009K4,0.2
+Household consumption expenditure,2010K1,2.3
+Household consumption expenditure,2010K2,0.3
+Household consumption expenditure,2010K3,1.2
+Household consumption expenditure,2010K4,-0.1
+Household consumption expenditure,2011K1,0.8
+Household consumption expenditure,2011K2,0.9
+Household consumption expenditure,2011K3,-0.5
+Household consumption expenditure,2011K4,-0.2
+Household consumption expenditure,2012K1,0.9
+Household consumption expenditure,2012K2,0.2
+Household consumption expenditure,2012K3,0.7
+Household consumption expenditure,2012K4,0.1
+Household consumption expenditure,2013K1,0.4
+Household consumption expenditure,2013K2,0.3
+Household consumption expenditure,2013K3,1.1
+Household consumption expenditure,2013K4,0.4
+Household consumption expenditure,2014K1,0.5
+Household consumption expenditure,2014K2,1.3
+Household consumption expenditure,2014K3,0.3
+Household consumption expenditure,2014K4,1.3
+Household consumption expenditure,2015K1,1.2
+Household consumption expenditure,2015K2,0.9
+Household consumption expenditure,2015K3,0.8
+Household consumption expenditure,2015K4,1
+Household consumption expenditure,2016K1,0
+Household consumption expenditure,2016K2,0.1
+Household consumption expenditure,2016K3,0.9
+Household consumption expenditure,2016K4,0.8
+Household consumption expenditure,2017K1,1.5
+Household consumption expenditure,2017K2,-0.5
+Household consumption expenditure,2017K3,0.3
+Household consumption expenditure,2017K4,0.9
+Household consumption expenditure,2018K1,0.7
+Household consumption expenditure,2018K2,0.8
+Household consumption expenditure,2018K3,-0.5
+Household consumption expenditure,2018K4,0.7
+Household consumption expenditure,2019K1,-0.6
+Household consumption expenditure,2019K2,0.5
+Household consumption expenditure,2019K3,1.2
+Household consumption expenditure,2019K4,0.1
+Household consumption expenditure,2020K1,0.8
+Household consumption expenditure,2020K2,-9.8
+Household consumption expenditure,2020K3,6.3
+Household consumption expenditure,2020K4,-0.3
+Household consumption expenditure,2021K1,2.1
+Household consumption expenditure,2021K2,1.3
+Household consumption expenditure,2021K3,3.9
+Household consumption expenditure,2021K4,0.9
+Household consumption expenditure,2022K1,-0.4
+Household consumption expenditure,2022K2,1.5
+Household consumption expenditure,2022K3,-1.3
+Household consumption expenditure,2022K4,-0.7
+Household consumption expenditure,2023K1,-1.3
+Household consumption expenditure,2023K2,0.4
+Household consumption expenditure,2023K3,0
+Household consumption expenditure,2023K4,0.9
+Household consumption expenditure,2024K1,0.2
+Household consumption expenditure,2024K2,0
+Household consumption expenditure,2024K3,0.5
+Household consumption expenditure,2024K4,0.8
+Household consumption expenditure,2025K1,0.4
+Household consumption expenditure,2025K2,0.2
+Household consumption expenditure,2025K3,1
+Household consumption expenditure,2025K4,0.6
+Household consumption expenditure,2026K1,0.6
