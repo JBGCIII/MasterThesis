@@ -2,25 +2,7 @@
 #####################################1.DATA_SET_PROCESSING####################################
 ##                                                                                           #
 
-# ==========================================0.Packages=======================================#
-
-#citation("Insert package here") --> See Appendix Thesis
-#packageVersion("Insert package here") 
-
-packages_data_set_processing <- c(
-    "dplyr", # Version '1.1.4' Data manipulation and transformation
-    "readr", # Version '2.1.5' Fast file reading and writing
-    "lubridate", # Version '1.9.5' Wrangling date and time objects
-    "tidyr", # Version '1.3.2' Reshaping data matrices
-    "purrr") # Version '1.0.4' Functional programming and iteration toolset
-
-# Install missing packages
-install.packages(setdiff(packages_data_set_processing , rownames(installed.packages())))
-
-# Load them all at once
-lapply(packages_data_set_processing , library, character.only = TRUE)
-
-# ==========================================0.Directory=======================================#
+# ==========================================0.Directory======================================#
 
 
 dir.create(
@@ -32,6 +14,12 @@ dir.create(
   "Processed_Data/Data_Set_Columns",
   showWarnings = FALSE
 )
+
+dir.create(
+  "Figures",
+  showWarnings = FALSE
+)
+
 
 # ==========================================================================================#
 #                   1_SCB_Real_Growth_Rate (GDP & Consumption) Seasonal_Adjusted            #
@@ -363,3 +351,137 @@ write_csv(
   macro_households,
   "Processed_Data/1c_final_data.csv"
 )
+
+
+
+
+
+# ==========================================================================================#
+#                                       PRELIMINARY DATA INSPECTION 
+# ==========================================================================================#
+#                                       Figure 1: Preliminary Plot
+
+macro_plot <- macro_households %>%
+  mutate(
+    quarter = as.yearqtr(
+      gsub("K", " Q", quarter),
+      format = "%Y Q%q"
+    )
+  ) %>%
+  pivot_longer(
+    cols = -quarter,
+    names_to = "variable",
+    values_to = "value"
+  )
+
+# 3. Create and assign plot
+Figure_1_Preliminary_Plot <- ggplot(
+  macro_plot,
+  aes(quarter, value)
+) +
+  geom_line(linewidth = 0.7) +
+  facet_wrap(
+    ~variable,
+    scales = "free_y",
+    ncol = 2
+  ) +
+  theme_bw() +
+  labs(
+    title = "Swedish Household Macroeconomic Variables",
+    x = "",
+    y = ""
+  )
+
+# 4. Save to the Figures folder
+ggsave(
+  filename = "Figures/Figure_1_Preliminary_Plot.png", 
+  plot = Figure_1_Preliminary_Plot,
+  width = 10, 
+  height = 8, 
+  dpi = 300
+)
+
+# ==========================================================================================#
+#                                       Deseasoning
+#Strong Seasonality inside the following variables (Savings Rate, Debt Growth)
+
+# Convert vector to time series object 
+saving_ts <- ts(macro_households$saving_rate, start = c(1996, 2), frequency = 4)
+
+# Run X-13 seasonal adjustment
+fit <- seas(saving_ts)
+
+# Extract seasonally adjusted series
+saving_rate_sa <- final(fit)
+
+# Plot original vs. adjusted
+# 4. Save the plot to the Figures directory
+png("Figures/Figure_2_Seasonal_Adjustment_Savings_Rate.png", width = 10, height = 6, units = "in", res = 300)
+plot(fit)
+dev.off()
+
+saving_rate_sa <- final(saving_sa)
+
+
+
+
+
+# Convert vector to time series object 
+debt_growth_ts <- ts(macro_households$saving_rate, start = c(1996, 2), frequency = 4)
+
+# Run X-13 seasonal adjustment
+fit2 <- seas(debt_growth_ts)
+
+# Extract seasonally adjusted series
+saving_rate_sa <- final(fit2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Convert vector to time series object 
+saving_ts <- ts(macro_households$saving_rate, start = c(1996, 2), frequency = 4)
+
+# Run X-13 seasonal adjustment
+fit <- seas(saving_ts)
+
+# Extract seasonally adjusted series
+saving_rate_sa <- final(fit)
+
+# Plot original vs. adjusted
+# 4. Save the plot to the Figures directory
+png("Figures/Figure_2_Seasonal_Adjustment_Savings_Rate.png", width = 10, height = 6, units = "in", res = 300)
+plot(fit)
+dev.off()
+
+saving_rate_sa <- final(saving_sa)
+
+
+
+
+
+# Convert vector to time series object 
+debt_growth_ts <- ts(macro_households$debt_growth, start = c(1996, 2), frequency = 4)
+
+# Run X-13 seasonal adjustment
+fit2 <- seas(debt_growth_ts)
+
+# Extract seasonally adjusted series
+debt_growth_sa <- final(fit2)
+
+
+# Plot original vs. adjusted
+# 4. Save the plot to the Figures directory
+png("Figures/Figure_3_Seasonal_Adjustment_Debt_Growth.png", width = 10, height = 6, units = "in", res = 300)
+plot(fit2)
+dev.off()

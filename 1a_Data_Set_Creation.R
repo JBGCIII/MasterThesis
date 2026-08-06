@@ -1,27 +1,8 @@
 
-#####################################0.DATA_SET_CREATION######################################
+#####################################1.DATA_SET_CREATION######################################
 ##                                                                                           #
 
-
-# ==========================================0.Packages=======================================#
-
-#citation("Insert package here") --> See Appendix Thesis
-#packageVersion("Insert package here") 
-
-packages_data_set_creation <- c(
-  "tidyverse", # Version '2.0.0' - Data wrangling, transformation, and plotting
-  "pxweb",     # Version '0.17.0' - API data extraction from national statistics database (SCB)
-  "httr",      # Version '1.4.8' - Tools for working with HTTP organized by HTTP verbs
-  "jsonlite" )  # Version '2.0.0' - Parsing raw API JSON payloads
-
-# Install missing packages
-install.packages(setdiff(packages_data_set_creation , rownames(installed.packages())))
-
-# Load them all at once
-lapply(packages_data_set_creation , library, character.only = TRUE)
-
-
-# ==========================================0.Functions=======================================#
+# ====================================0.Functions============================================#
 
 # Helper functions
 # SCB PXWEB downloader
