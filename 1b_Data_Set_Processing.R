@@ -42,82 +42,105 @@ fa <- read_csv(
   "Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv"
 )
 
-
+# Extract household liabilities
 household_debt <- fa %>%
   filter(
     item == "Liabilities (FL)"
-  )
-
-household_debt <- household_debt %>%
+  ) %>%
   select(
     quarter,
     Balances
   ) %>%
   rename(
     debt_sek_million = Balances
-  )
+  ) %>%
+  arrange(quarter)
 
-  household_debt <- household_debt %>%
+# ------------------------------------------------------------
+# Adjust for methodological level shift at 2001K1
+# ------------------------------------------------------------
+
+# Estimate level shift
+shift_factor <- household_debt %>%
+  filter(
+    quarter == "2001K1"
+  ) %>%
+  pull(debt_sek_million) /
+  household_debt %>%
+  filter(
+    quarter == "2000K4"
+  ) %>%
+  pull(debt_sek_million)
+
+
+# Apply adjustment to pre-break observations
+household_debt <- household_debt %>%
   mutate(
-    debt_growth = 100 * (
-      log(debt_sek_million) -
-      lag(log(debt_sek_million))
+    debt_adjusted = if_else(
+      quarter < "2001K1",
+      debt_sek_million * shift_factor,
+      debt_sek_million
     )
   )
 
 
-  write_csv(
+# Calculate growth after adjustment
+household_debt <- household_debt %>%
+  mutate(
+    debt_growth = 100 * (
+      log(debt_adjusted) -
+      lag(log(debt_adjusted))
+    )
+  )
+
+
+write_csv(
   household_debt,
   "Processed_Data/Data_Set_Columns/3b_household_debt.csv"
 )
 
 
+
 # ==========================================================================================#
 #                                   4_Asset_liability_ratio                                                 
 
-# Extract assets and liabilities
 financial_balance_sheet <- fa %>%
   filter(
-    item %in% c(
-      "Financial assets (FA)",
-      "Liabilities (FL)"
-    )
+    item == "Financial assets (FA)"
   ) %>%
   select(
     quarter,
-    item,
     Balances
-  )
-
-# Reshape
-financial_balance_sheet <- financial_balance_sheet %>%
-  pivot_wider(
-    names_from = item,
-    values_from = Balances
-  )
-
-# Calculate financial asset/liability ratio
-financial_asset_ratio <- financial_balance_sheet %>%
+  ) %>%
+  rename(
+    financial_assets = Balances
+  ) %>%
+  left_join(
+    household_debt %>%
+      select(
+        quarter,
+        debt_adjusted
+      ),
+    by = "quarter"
+  ) %>%
   mutate(
     asset_liability_ratio =
-      `Financial assets (FA)` /
-      `Liabilities (FL)`
+      financial_assets / debt_adjusted
   ) %>%
   select(
     quarter,
     asset_liability_ratio
   )
-
 # Save
 write_csv(
-  financial_asset_ratio,
-  "Processed_Data/Data_Set_Columns/4_financial_asset_liability_ratio.csv"
+  financial_balance_sheet,
+  "Processed_Data/Data_Set_Columns/4b_financial_asset_liability_ratio.csv"
 )
 
 
 
 # ==========================================================================================#
-#                                  5_Asset_liability_ratio                                                 
+#                                  5_Household's Financials                                                 
 
 
 sector <- read_csv(
@@ -196,7 +219,7 @@ cpi_quarterly <- cpi_quarterly %>%
 
 write_csv(
   cpi_quarterly,
-  "Processed_Data/Data_Set_Columns/6_inflation_quarterly.csv"
+  "Processed_Data/Data_Set_Columns/6b_inflation_quarterly.csv"
 )
 
 
@@ -252,7 +275,7 @@ real_house_prices <- hpi_sweden %>%
 
 write_csv(
   real_house_prices,
-  "Processed_Data/Data_Set_Columns/7_real_house_price_growth.csv"
+  "Processed_Data/Data_Set_Columns/7b_real_house_price_growth.csv"
 )
 
 
@@ -286,7 +309,7 @@ policy_rate_quarterly <- repo_rate %>%
 
 write_csv(
   policy_rate_quarterly,
-  "Processed_Data/Data_Set_Columns/8_policy_rate_quarterly.csv"
+  "Processed_Data/Data_Set_Columns/8b_policy_rate_quarterly.csv"
 )
 
 
@@ -315,7 +338,12 @@ macro_households <-
         debt_growth
       ),
 
-    financial_asset_ratio,
+    financial_balance_sheet %>%
+      select(
+        quarter,
+        asset_liability_ratio
+      ),
+
 
     household_indicators %>%
       select(

@@ -3,6 +3,10 @@
 
 data_set_adf_kpss <- read_csv("Processed_Data/1e_final_data_seasonal_outliers_adjusted.csv"
 )
+330*10
+90*7
+
+3300+630
 
 #############################################################################################
 ###                                 1. Unit root tests                                    ### 

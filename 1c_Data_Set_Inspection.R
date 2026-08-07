@@ -53,7 +53,7 @@ Figure_1_Preliminary_Plot <- ggplot(
 
 # 4. Save to the Figures folder
 ggsave(
-  filename = "Figures/Figure_1_Preliminary_Plot.png", 
+  filename = "Figures/Figure_1_Preliminary_Plot2.png", 
   plot = Figure_1_Preliminary_Plot,
   width = 10, 
   height = 8, 
