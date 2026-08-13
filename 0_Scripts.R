@@ -30,3 +30,11 @@ library(xts) # Exstensible Time Series (I would have used build in Ts if not
 install.packages("tsoutliers")
 library(tsoutliers)
 library(forecast)
+
+
+install.packages("BVAR")   # run once
+library(BVAR)
+
+
+library(coda) # Used for formal MCMC convergence diagnostics
+library(BVAR)

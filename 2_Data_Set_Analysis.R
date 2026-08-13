@@ -1,12 +1,9 @@
 #####################################2.DATA_SET_ANALYSIS#####################################
-##                                                                                          #
+##                                                                                         ##
 
 data_set_adf_kpss <- read_csv("Processed_Data/1e_final_data_seasonal_outliers_adjusted.csv"
 )
-330*10
-90*7
 
-3300+630
 
 #############################################################################################
 ###                                 1. Unit root tests                                    ### 
@@ -22,7 +19,7 @@ summary(ur.kpss(data_set_adf_kpss$gdp_growth))
 summary(ur.df(data_set_adf_kpss$consumption_growth, type = "none", selectlags = "AIC"))
 summary(ur.kpss(data_set_adf_kpss$consumption_growth))
 
-#Stationary Test for Debt Growth Seasonally Adjusted
+#Stationary Test for Debt Growth
 summary(ur.df(data_set_adf_kpss$debt_growth, type = "none", selectlags = "AIC"))
 summary(ur.kpss(data_set_adf_kpss$debt_growth))
 
@@ -64,15 +61,44 @@ summary(ur.df(data_set_adf_kpss$debt_income, type = "trend", selectlags = "AIC")
 summary(ur.kpss(data_set_adf_kpss$debt_income))
 
 
+#############################################################################################
+###                                 2. Correlation Test                                   ### 
+
+df_numeric <- data_set_adf_kpss %>% dplyr::select(where(is.numeric))
+
+write.csv(cor(df_numeric, use = "complete.obs"), "Analysis/Correlation_matrix.csv")
+pc_stat <- prcomp(df_numeric, scale. = TRUE)
 
 
 
+# 1. Transform variables based on stationarity  
+df_stationary <- data_set_adf_kpss %>%
+  mutate(
+    d_debt_growth            = debt_growth - lag(debt_growth),
+    d_asset_liability_ratio  = asset_liability_ratio - lag(asset_liability_ratio),
+    d_saving_rate            = saving_rate - lag(saving_rate),
+    d_debt_income            = debt_income - lag(debt_income),
+    d_interest_burden        = interest_burden - lag(interest_burden),
+    d_policy_rate            = policy_rate - lag(policy_rate)
+  ) %>%
+  drop_na()
 
+# 1. Select ONLY the 9 stationary variables (excluding un-differenced I(1) variables)
+df_clean_pca <- df_stationary %>% 
+  dplyr::select(
+    gdp_growth, 
+    consumption_growth, 
+    real_house_price_growth,
+    d_debt_growth, 
+    d_asset_liability_ratio, 
+    d_saving_rate, 
+    d_debt_income, 
+    d_interest_burden, 
+    d_policy_rate
+  )
 
-
-
-
-
-
-
+write.csv(cor(df_clean_pca, use = "complete.obs"), "Analysis/Correlation_Matrix_First_Diff.csv")
+# Run PCA on standardized, stationarized data
+pca_stationary <- prcomp(df_clean_pca, scale. = TRUE)
+summary(pca_stationary)
 

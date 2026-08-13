@@ -45,98 +45,71 @@ fa <- read_csv(
 # Extract household liabilities
 household_debt <- fa %>%
   filter(
-    item == "Liabilities (FL)"
+    item == "Loans, total",
+    Balances > 80000
   ) %>%
-  select(
-    quarter,
-    Balances
-  ) %>%
-  rename(
-    debt_sek_million = Balances
-  ) %>%
+  dplyr::select(quarter, Balances) %>%
   arrange(quarter)
-
-# ------------------------------------------------------------
-# Adjust for methodological level shift at 2001K1
-# ------------------------------------------------------------
-
-# Estimate level shift
-shift_factor <- household_debt %>%
-  filter(
-    quarter == "2001K1"
-  ) %>%
-  pull(debt_sek_million) /
-  household_debt %>%
-  filter(
-    quarter == "2000K4"
-  ) %>%
-  pull(debt_sek_million)
-
-
-# Apply adjustment to pre-break observations
-household_debt <- household_debt %>%
-  mutate(
-    debt_adjusted = if_else(
-      quarter < "2001K1",
-      debt_sek_million * shift_factor,
-      debt_sek_million
-    )
-  )
 
 
 # Calculate growth after adjustment
 household_debt <- household_debt %>%
   mutate(
     debt_growth = 100 * (
-      log(debt_adjusted) -
-      lag(log(debt_adjusted))
+      log(Balances) -
+      lag(log(Balances))
     )
   )
 
 
 write_csv(
   household_debt,
-  "Processed_Data/Data_Set_Columns/3b_household_debt.csv"
+  "Processed_Data/Data_Set_Columns/b3b_household_debt.csv"
 )
 
 
 
-# ==========================================================================================#
-#                                   4_Asset_liability_ratio                                                 
+library(tidyverse)
 
-financial_balance_sheet <- fa %>%
-  filter(
-    item == "Financial assets (FA)"
-  ) %>%
-  select(
-    quarter,
-    Balances
-  ) %>%
-  rename(
-    financial_assets = Balances
-  ) %>%
-  left_join(
-    household_debt %>%
-      select(
-        quarter,
-        debt_adjusted
-      ),
-    by = "quarter"
-  ) %>%
+fa <- read_csv("Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv")
+
+# 1. Extract raw series
+household_debt <- fa %>%
+  filter(item == "Liabilities (FL)", Balances > 80000) %>%
+  dplyr::select(quarter, Balances) %>%
+  rename(liabilities = Balances)
+
+financial_assets <- fa %>%
+  filter(item == "Financial assets (FA)", Balances > 80000) %>%
+  dplyr::select(quarter, Balances) %>%
+  rename(assets = Balances)
+
+# 2. Compute the liability level shift ratio at 2001K1
+liab_2001K1 <- household_debt %>% filter(quarter == "2001K1") %>% pull(liabilities)
+liab_2000K4 <- household_debt %>% filter(quarter == "2000K4") %>% pull(liabilities)
+
+shift_factor <- liab_2001K1 / liab_2000K4  # ~1.1227
+
+# 3. Join and calculate adjusted ratio
+financial_balance_sheet <- financial_assets %>%
+  left_join(household_debt, by = "quarter") %>%
+  arrange(quarter) %>%
   mutate(
-    asset_liability_ratio =
-      financial_assets / debt_adjusted
+    # Multiply pre-2001 liabilities by shift_factor to scale them UP to post-2001 level
+    liabilities_adj = if_else(
+      quarter < "2001K1",
+      liabilities * shift_factor,
+      liabilities
+    ),
+    asset_liability_ratio = assets / liabilities_adj
   ) %>%
-  select(
-    quarter,
-    asset_liability_ratio
-  )
-# Save
+  dplyr::select(quarter, asset_liability_ratio)
+
+# Save output
 write_csv(
   financial_balance_sheet,
-  "Processed_Data/Data_Set_Columns/4b_financial_asset_liability_ratio.csv"
+  "Processed_Data/Data_Set_Columns/b4b_financial_asset_liability_ratio.csv"
 )
-
 
 
 # ==========================================================================================#
@@ -242,15 +215,6 @@ hpi_sweden <- hpi %>%
 
 
 # Calculate quarterly growth
-hpi_sweden <- hpi_sweden %>%
-  mutate(
-    house_price_growth =
-      100 * (
-        log(Index) -
-        lag(log(Index))
-      )
-  )
-
 real_house_prices <- hpi_sweden %>%
   left_join(
     cpi_quarterly,
