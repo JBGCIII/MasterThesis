@@ -3,7 +3,7 @@
 ##                                                                                          ##
 
 needed_pkgs <- c("tidyverse", "pxweb", "httr", "jsonlite", "zoo", "seasonal", "urca", "dynlm"
-,"xts" )
+,"xts", "tsoutliers", "forecast" , "coda", "stats")
 missing_pkgs <- needed_pkgs[!(needed_pkgs %in% installed.packages()[, "Package"])]
 if (length(missing_pkgs) > 0) install.packages(missing_pkgs)
 
@@ -23,31 +23,16 @@ library(dynlm)  # Dynamic Linear Regression
 library(xts) # Exstensible Time Series (I would have used build in Ts if not 
              #for having to split dates in ADF test)
 
-
-
-
-
-install.packages("tsoutliers")
 library(tsoutliers)
 library(forecast)
-
-
-install.packages("BVAR")   # run once
-library(BVAR)
-
-
 library(coda) # Used for formal MCMC convergence diagnostics
-library(BVAR)
-
-
 library(stats)
 
+# Bvar with sign restrictions.
+# Note: The package needs to be downloaded directly from Github.
+remotes::install_github("bsvars/bsvarSIGNs", upgrade = "never")
 
-
-
-?bsvars
-?bsvarSIGNs
-
-library(bsvars)
-library(bsvarSIGNs)
+library(bsvars) #Bayesian Estimation of Structural Vector Autoregressive Models
+library(bsvarSIGNs) # Add-on package Bayesian Estimation of Structural Vector 
+# Autoregressions Identified by Sign, Zero, and Narrative Restrictions
 

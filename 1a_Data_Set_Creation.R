@@ -2,54 +2,6 @@
 #####################################1.DATA_SET_CREATION######################################
 ##                                                                                           #
 
-# ====================================0.Functions============================================#
-
-# Helper functions
-# SCB PXWEB downloader
-download_pxweb <- function(url, query){
-
-  pxq <- pxweb_query(query) # Converts list into a valid PX-Web query object.
-
-  pxweb_get_data( # Executes the HTTP call to SCB and retrieves the data
-    url = url,
-    query = pxq,
-    column.name.type = "text",
-    variable.value.type = "text"
-  )
-}
-
-
-
-# Riksbank SWEA downloader
-start_date <- "1995-01-01"
-get_riksbank_series <- function(series_id,
-                                from = start_date,
-                                to = Sys.Date()) {
-
-  url <- paste0(
-    "https://api.riksbank.se/swea/v1/Observations/",
-    series_id,
-    "/",
-    from,
-    "/",
-    to
-  )
-
-  response <- GET(url)
-
-  stop_for_status(response)
-
-  fromJSON(
-    content(
-      response,
-      "text",
-      encoding = "UTF-8"
-    )
-  ) |>
-    as.data.frame()
-
-}
-
 
 # ==========================================0.Directory=======================================#
 
