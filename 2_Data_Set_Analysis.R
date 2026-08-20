@@ -23,7 +23,6 @@ summary(ur.kpss(data_set_adf_kpss$consumption_growth))
 summary(ur.df(data_set_adf_kpss$debt_growth, type = "none", selectlags = "AIC"))
 summary(ur.kpss(data_set_adf_kpss$debt_growth))
 
-
 #Stationary Test for Real House Price
 summary(ur.df(data_set_adf_kpss$real_house_price_growth, type = "none", selectlags = "AIC"))
 summary(ur.kpss(data_set_adf_kpss$real_house_price_growth))
@@ -38,16 +37,17 @@ summary(ur.df(data_set_adf_kpss$debt_growth, type = "drift", selectlags = "AIC")
 summary(ur.df(data_set_adf_kpss$saving_rate, type = "drift", selectlags = "AIC"))
 summary(ur.kpss(data_set_adf_kpss$saving_rate))
 
-
 #Stationary Test for Interest Burden
 summary(ur.df(data_set_adf_kpss$interest_burden, type = "drift", selectlags = "AIC"))
 summary(ur.kpss(data_set_adf_kpss$interest_burden))
-
 
 #Stationary Test for Policy Rate
 summary(ur.df(data_set_adf_kpss$policy_rate, type = "drift", selectlags = "AIC"))
 summary(ur.kpss(data_set_adf_kpss$policy_rate))
 
+#Stationary Test for Inflation Rate
+summary(ur.df(data_set_adf_kpss$cpi_growth, type = "drift", selectlags = "AIC"))
+summary(ur.kpss(data_set_adf_kpss$cpi_growth))
 
 # ==========================================================================================#
 #                                   Linear                                           
@@ -69,8 +69,6 @@ df_numeric <- data_set_adf_kpss %>% dplyr::select(where(is.numeric))
 write.csv(cor(df_numeric, use = "complete.obs"), "Analysis/Correlation_matrix.csv")
 pc_stat <- prcomp(df_numeric, scale. = TRUE)
 
-
-
 # 1. Transform variables based on stationarity  
 df_stationary <- data_set_adf_kpss %>%
   mutate(
@@ -83,7 +81,7 @@ df_stationary <- data_set_adf_kpss %>%
   ) %>%
   drop_na()
 
-# 1. Select ONLY the 9 stationary variables (excluding un-differenced I(1) variables)
+# 1. Select ONLY the 10 stationary variables (excluding un-differenced I(1) variables)
 df_clean_pca <- df_stationary %>% 
   dplyr::select(
     gdp_growth, 
@@ -94,6 +92,7 @@ df_clean_pca <- df_stationary %>%
     d_saving_rate, 
     d_debt_income, 
     d_interest_burden, 
+    cpi_growth,
     d_policy_rate
   )
 

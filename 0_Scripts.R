@@ -38,3 +38,16 @@ library(BVAR)
 
 library(coda) # Used for formal MCMC convergence diagnostics
 library(BVAR)
+
+
+library(stats)
+
+
+
+
+?bsvars
+?bsvarSIGNs
+
+library(bsvars)
+library(bsvarSIGNs)
+

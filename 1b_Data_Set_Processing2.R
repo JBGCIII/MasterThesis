@@ -7,6 +7,40 @@
 # 0. Setup Directories
 dir.create("Processed_Data/Data_Set_Columns", recursive = TRUE, showWarnings = FALSE)
 
+
+
+gdp <- read_csv("Raw_Data/1_SCB_gdp_growth_quarterly.csv")
+cons <- read_csv("Raw_Data/2_SCB_household_consumption_real_quarterly.csv")
+fa <- read_csv("Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv")
+sector <- read_csv("Raw_Data/3_SCB_household_sector_indicators.csv")
+cpi <- read_csv("Raw_Data/5_SCB_CPI_monthly.csv")
+hpi <- read_csv("Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv")
+repo <- read_csv("Raw_Data/7_Riksbank_policy_rate_daily.csv")
+
+glimpse(gdp)
+glimpse(cons)
+glimpse(fa)
+glimpse(sector)
+glimpse(cpi)
+glimpse(hpi)
+glimpse(repo)
+
+head(gdp, 10)
+head(cons, 10)
+head(fa, 10)
+head(sector, 10)
+head(cpi, 10)
+head(hpi, 10)
+head(repo, 10)
+
+
+
+
+
+
+
+
+
 # ==============================================================================
 # 1. SCB Real Growth Rate (GDP & Consumption)
 # ==============================================================================
@@ -21,7 +55,9 @@ fa <- read_csv("Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv")
 household_debt <- fa %>%
   filter(
     item == "Loans, total",
-    Balances > 80000
+    # Note. In the data set there are two items named Loans Total. 
+    # This ensures that the right one is picked.
+    Balances > 80000 
   ) %>%
   dplyr::select(quarter, Balances) %>%
   arrange(quarter) %>%
@@ -117,6 +153,13 @@ write_csv(cpi_quarterly, "Processed_Data/Data_Set_Columns/6b_inflation_quarterly
 # 7. Real House Price Growth
 # ==============================================================================
 hpi <- read_csv("Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv")
+
+# In case you were wondering about the similiarities between CPI and Growth.
+# The following dates.
+#  region quarter Index nominal_hpi_growth
+#  <chr>  <chr>   <dbl>              <dbl>
+#1 Sweden 1997K4    201                  0
+#2 Sweden 1999K4    242                  0
 
 real_house_prices <- hpi %>%
   filter(region == "Sweden") %>%

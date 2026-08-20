@@ -94,3 +94,157 @@ write.csv(ess_vals, "Analysis/ess_vals.csv")
 write.csv(sorted_eig, "Analysis/sorted_eig.csv")
 
 
+# ==========================================================================================#
+#                                    Diagnostics                                            #
+
+# -------------------------------------------------------------
+# Run Preliminary IRFs
+# -------------------------------------------------------------
+irf_preliminary <- irf(
+  run_bvar,
+  horizon = 20,
+  fevd    = TRUE
+)
+
+# Extract the FEVD component first
+fevd_obj <- fevd(irf_preliminary)
+
+# Plot FEVD
+plot(fevd_obj)
+
+
+# Focus on a single target variable
+plot(fevd_obj, vars = "gdp_growth")
+
+
+# 1. Take the posterior mean across MCMC draws (dim 1) -> 3D Array [Vars, Horizon, Shocks]
+fevd_mean <- apply(fevd_obj$fevd, c(2, 3, 4), mean)
+
+# 2. Assign dimension names
+var_names <- fevd_obj$variables
+dimnames(fevd_mean) <- list(
+  Response = var_names,
+  Horizon  = 1:dim(fevd_mean)[2],
+  Shock    = var_names
+)
+
+# 3. Flatten array into a long Data Frame
+fevd_df <- as.data.frame.table(fevd_mean, responseName = "Variance_Share") %>%
+  mutate(Horizon = as.numeric(as.character(Horizon)))
+
+# 4. Plot stacked area decomposition
+ggplot(fevd_df, aes(x = Horizon, y = Variance_Share, fill = Shock)) +
+  geom_area(alpha = 0.85, color = "black", linewidth = 0.2) +
+  facet_wrap(~ Response, scales = "free_y") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  scale_fill_brewer(palette = "Set3") +
+  theme_minimal() +
+  labs(
+    title = "Bayesian FEVD Posterior Means",
+    x = "Forecast Horizon",
+    y = "% Variance Explained",
+    fill = "Shock Source"
+  )
+
+
+class(fevd_obj)
+str(fevd_obj, max.level = 1)
+
+# Assign the missing class attribute
+class(fevd_obj) <- "bvar_fevd"
+
+# Now standard plot will work
+plot(fevd_obj)
+
+
+
+# Option A: Extract FEVD with proper class directly from the IRF summary
+plot(summary(irf_preliminary), FEVD = TRUE)
+
+# Option B: Pass FEVD parameter directly to plot
+plot(irf_preliminary, FEVD = TRUE)
+
+
+plot(irf_preliminary)
+
+
+# 1. Compute FEVD directly from the main model fit
+fevd_fit <- fevd(run_bvar, response = "gdp_growth",  horizon = 20,
+  fevd    = TRUE)
+
+# 2. Assign the bvar_fevd class
+class(fevd_fit) <- "bvar_fevd"
+
+# 3. Plot
+plot(fevd_fit)
+
+
+
+
+
+
+
+
+
+BVAR:::plot.bvar_fevd(bv_fevd)
+
+
+?irf.bvar
+vignette("BVAR")
+
+
+
+var_order <- colnames(bvar_ts)
+# Expect: "gdp_growth" "consumption_growth" "debt_growth"
+#         "asset_liability_ratio" "saving_rate" "interest_burden"
+#         "real_house_price_growth" "policy_rate"
+print(var_order)
+ 
+K <- length(var_order)
+sign_restr <- matrix(NA, nrow = K, ncol = K,
+                      dimnames = list(var_order, var_order))
+
+
+
+shock_col <- "debt_growth"
+ 
+sign_restr["debt_growth", shock_col]             <-  1
+sign_restr["real_house_price_growth", shock_col]  <-  1
+# sign_restr["policy_rate", shock_col]            <-  1  # uncomment for option (b)
+ 
+print(sign_restr)
+
+
+ 
+
+ 
+# -------------------------------------------------------------
+# Run identified IRFs
+# -------------------------------------------------------------
+irf_signed <- irf(
+  run_bvar,
+  horizon    = 20,
+  fevd       = TRUE,
+  sign_restr = sign_restr,
+  sign_lim   = 1000000   # max rotations attempted before giving up;
+                        # raise if you get too few accepted draws
+)
+ 
+plot(irf_signed)
+ 
+
+
+ # 1. Run unconstrained Cholesky IRFs
+irf_chol <- irf(run_bvar, horizon = 20)
+
+# 2. Plot the impulse response functions
+plot(irf_chol)
+
+
+
+
+
+
+
+
+
