@@ -11,7 +11,7 @@
 # ========================== 1a_Data_Set_Creation.R ====================================#
 
 ## (1) download_pxweb
-# Purpuose: SCB PXWEB downloader, helps to streamline the download from SCB APIs using
+# Purpose: SCB PXWEB downloader, helps to streamline the download from SCB APIs using
 # the pwxweb query.
 download_pxweb <- function(url, query){
 
@@ -26,7 +26,7 @@ download_pxweb <- function(url, query){
 
 
 ## (2) get_riksbank_series
-# Purpouse: Helps to streamline the download from Riksbanken API
+# Purpose: Helps to streamline the download from Riksbanken API
 # originally I downloaded multiple items from Riksbanken (deposit_rate, lending_rate)
 # so it was necessary then, but not strictly necessary now.
 
@@ -63,7 +63,7 @@ get_riksbank_series <- function(series_id,
 
 # ========================== 2_BVARSIGN.R====================================#
 
-#This is where function were necessary. Unfourtanately the BVARSIGN package
+#This is where functions were necessary. Unfortanately the BVARSIGN package
 #encounters issues when dealing with large calculations and presents the 
 #following message  "C:\Program Files\R\R-4.5.2\bin\R.exe '--no-save', 
 #'--no-restore'" terminated with exit code: -1073741819. when using
@@ -76,7 +76,7 @@ get_riksbank_series <- function(series_id,
 
 
 ## (3) compute_fevd_from_irf
-# Used instead of compute_variance_decompositions() as it crashed.
+# Purpose: Used instead of compute_variance_decompositions() as it crashed.
 # The purpouse is to compute FEVD manually by auto extracting the
 # arrays. Due to multiple FEVD being necessar, having the whole
 # script will clutter the script so I decided to create
@@ -134,7 +134,7 @@ compute_fevd_from_irf <- function(irf_obj) {
 
 
 ## (4) export_bvar_results_to_csv
-# This allows to export the IRF & FEVD to CSV for analysis
+# Purpose: This allows to export the IRF & FEVD to CSV for analysis
 # Note, I did not export the full posterior since it made
 # a files in the GBs.
 
@@ -190,7 +190,7 @@ export_bvar_results_to_csv <- function(bvar_array, var_names, file_name, shock_n
 
 
 ## (5) get_irf_median_df
-# This function allows to easily extract median IRF for a specific 
+# Purpose: This function allows to easily extract median IRF for a specific 
 # response variable & shock. Unfourtanely the bvarsign nor the BVAR
 # allow to export a single row from the IRF and instead plot all 9X9.
 
@@ -218,22 +218,237 @@ get_irf_median_df <- function(irf_obj, response_var, shock_var, label_name, targ
 
 
 
-
-
-
-
-
-#get_irf_median_df <- function(irf_obj, response_var, shock_var, label_name) {
-#  arr <- if (is.array(irf_obj)) irf_obj else irf_obj$posterior$irf
-#  r_idx <- which(target_cols == response_var)
-#  s_idx <- which(target_cols == shock_var)
+export_hyperparameters <- function(estimation_obj, target_cols, file_path = "Output/hyperparameters.csv") {
   
-#  sub_mat <- arr[r_idx, s_idx, , ]
-#  med <- apply(sub_mat, 1, median, na.rm = TRUE)
-#  
-#  data.frame(
-#    Horizon = 1:dim(arr)[3],
-#    Median = med,
-#    Specification = label_name
-#  )
-#}
+  # Ensure target directory exists
+  dir.create(dirname(file_path), showWarnings = FALSE, recursive = TRUE)
+  
+  hyper_names <- c(
+    paste0("Psi_", target_cols),
+    "lambda (Overall Tightness)",
+    "alpha (Lag Decay Exponent)",
+    "a_0 (Gamma Shape)",
+    "mu (Sum-of-Coeff Weight)",
+    "mu_mu (Prior Mean mu)",
+    "sigma_mu (Prior SD mu)",
+    "delta (Unit-Root Weight)"
+  )
+  
+  hyper_draws <- estimation_obj$posterior$hyper
+  
+  hyper_summary <- t(apply(hyper_draws, 1, function(x) c(
+    Mean   = mean(x),
+    SD     = sd(x),
+    q025   = as.numeric(quantile(x, 0.025)),
+    Median = median(x),
+    q975   = as.numeric(quantile(x, 0.975))
+  )))
+  
+  hyper_df <- data.frame(
+    Hyperparameter = hyper_names,
+    round(hyper_summary, 4),
+    check.names = FALSE
+  )
+  
+  write.csv(hyper_df, file_path, row.names = FALSE)
+  message("Hyperparameters successfully exported to: ", file_path)
+  return(invisible(hyper_df))
+}
+
+
+
+
+
+
+
+
+check_mcmc_convergence <- function(estimation_obj, 
+                                    var_idx, 
+                                    lag_idx = var_idx, 
+                                    var_names = NULL, 
+                                    output_path = "Output/MCMC_Diagnostics.png") {
+  
+  # Ensure target output directory exists
+  dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
+  
+  # Extract autoregressive parameter matrix B [N, N*p + 1, Draws]
+  b_draws <- estimation_obj$posterior$B
+  
+  # Extract chain for selected parameter
+  param_chain <- b_draws[var_idx, lag_idx, ]
+  
+  # Resolve variable labels for plot headers
+  dep_name <- if (!is.null(var_names)) var_names[var_idx] else paste("Var", var_idx)
+  lag_name <- if (!is.null(var_names)) var_names[lag_idx] else paste("Var", lag_idx)
+  param_title <- paste0("Equation: ", dep_name, " | Lag: ", lag_name)
+  
+  # ----------------------------------------------------------------------------
+  # 1. Export Diagnostic Plot Matrix (Trace + ACF)
+  # ----------------------------------------------------------------------------
+  png(output_path, width = 3200, height = 2600, res = 300)
+  on.exit(dev.off(), add = TRUE) # Ensures graphics device closes safely on error
+  
+  par(mfrow = c(2, 1), mar = c(4.5, 4.5, 3, 1), family = "sans")
+  
+  # Trace Plot
+  plot(param_chain, type = "l", col = "#1F4E78", lwd = 1.2,
+       main = paste("MCMC Trace Plot -", param_title),
+       xlab = "MCMC Iteration", ylab = "Draw Value", grid())
+  abline(h = mean(param_chain), col = "firebrick", lty = 2, lwd = 1.5)
+  
+  # ACF Plot
+  acf(param_chain, main = paste("Autocorrelation Function (ACF) -", param_title),
+      col = "#1F4E78", lwd = 2)
+  
+  par(mfrow = c(1, 1)) # Reset grid
+  
+  # ----------------------------------------------------------------------------
+  # 2. Compute Convergence Metrics via coda
+  # ----------------------------------------------------------------------------
+  mcmc_chain <- coda::mcmc(param_chain)
+  
+  ess_val    <- coda::effectiveSize(mcmc_chain)
+  geweke_obj <- coda::geweke.diag(mcmc_chain)
+  geweke_z   <- as.numeric(geweke_obj$z)
+  
+  # Evaluate convergence threshold (|Z| < 1.96)
+  convergence_pass <- abs(geweke_z) < 1.96
+  
+  metrics_df <- data.frame(
+    Parameter     = param_title,
+    ESS           = round(as.numeric(ess_val), 2),
+    Geweke_Zscore = round(geweke_z, 4),
+    Converged_5pct = convergence_pass
+  )
+  
+  message("Diagnostics exported to: ", output_path)
+  return(metrics_df)
+}
+
+
+
+
+
+
+
+
+
+
+
+get_irf_median_df <- function(irf_obj, 
+                              response_var, 
+                              shock_var, 
+                              label_name = "Baseline", 
+                              target_cols = NULL) {
+  
+  # 1. Extract raw 4D IRF array [N x N x Horizon x Draws]
+  arr <- if (is.array(irf_obj)) {
+    irf_obj
+  } else if (!is.null(irf_obj$posterior$irf)) {
+    irf_obj$posterior$irf
+  } else if (!is.null(irf_obj$irf)) {
+    irf_obj$irf
+  } else {
+    stop("Unrecognized IRF object structure. Pass output from compute_impulse_responses().")
+  }
+  
+  # 2. Try extracting variable names from array dimnames if target_cols is NULL
+  if (is.null(target_cols) && !is.null(dimnames(arr)[[1]])) {
+    target_cols <- dimnames(arr)[[1]]
+  }
+  
+  # 3. Resolve Response Index
+  r_idx <- if (is.numeric(response_var)) {
+    response_var
+  } else if (!is.null(target_cols)) {
+    which(target_cols == response_var)
+  } else {
+    stop("target_cols must be provided if response_var is passed as a string character.")
+  }
+  
+  # 4. Resolve Shock Index
+  s_idx <- if (is.numeric(shock_var)) {
+    shock_var
+  } else if (!is.null(target_cols)) {
+    which(target_cols == shock_var)
+  } else {
+    stop("target_cols must be provided if shock_var is passed as a string character.")
+  }
+  
+  if (length(r_idx) == 0 || r_idx > dim(arr)[1]) stop("Invalid response_var index/name.")
+  if (length(s_idx) == 0 || s_idx > dim(arr)[2]) stop("Invalid shock_var index/name.")
+  
+  # 5. Extract subset slice [Horizon x Draws]
+  sub_mat <- arr[r_idx, s_idx, , ]
+  
+  # Ensure 2D matrix structure if Horizon = 1
+  if (is.null(dim(sub_mat))) {
+    sub_mat <- matrix(sub_mat, nrow = 1)
+  }
+  
+  # 6. Compute posterior medians and 68% credible intervals
+  med   <- apply(sub_mat, 1, median, na.rm = TRUE)
+  lower <- apply(sub_mat, 1, quantile, probs = 0.16, na.rm = TRUE)
+  upper <- apply(sub_mat, 1, quantile, probs = 0.84, na.rm = TRUE)
+  
+  data.frame(
+    Horizon       = 1:nrow(sub_mat),
+    Median        = med,
+    Lower_68      = lower,
+    Upper_68      = upper,
+    Specification = label_name,
+    stringsAsFactors = FALSE
+  )
+}
+
+
+
+
+
+
+
+
+
+
+
+plot_single_irf <- function(irf_df, 
+                            response_name = "Variable", 
+                            shock_name = "Structural Shock", 
+                            output_path = NULL, 
+                            width = 3200, 
+                            height = 2600, 
+                            res = 300) {
+  
+  library(ggplot2)
+  
+  # Build ggplot object
+  p <- ggplot(irf_df, aes(x = Horizon, y = Median)) +
+    geom_ribbon(aes(ymin = Lower_68, ymax = Upper_68), fill = "steelblue", alpha = 0.3) +
+    geom_line(color = "darkblue", linewidth = 1.2) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "firebrick") +
+    labs(
+      title    = paste("Response of", response_name),
+      subtitle = paste("Shock:", shock_name),
+      x        = "Horizon (Periods)",
+      y        = "Percentage Points"
+    ) +
+    theme_minimal(base_size = 13) +
+    theme(
+      plot.title    = element_text(face = "bold", size = 15),
+      plot.subtitle = element_text(color = "gray30", size = 12),
+      panel.grid.minor = element_blank()
+    )
+  
+  # Export image if output_path is specified
+  if (!is.null(output_path)) {
+    dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
+    
+    png(output_path, width = width, height = height, res = res)
+    print(p) # Explicitly print ggplot to graphics device
+    dev.off()
+    
+    message("IRF plot saved to: ", output_path)
+  }
+  
+  return(p)
+}
