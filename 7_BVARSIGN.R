@@ -1,8 +1,10 @@
-# ==========================================================================================#
-#                             2.BAYESIAN ESTIMATION WITH SIGN RESTRICTION
-# ==========================================================================================#
+###############################################################################
+################ 2.BAYESIAN ESTIMATION WITH SIGN RESTRICTION  #################
+###############################################################################
 
-# 1. DATA
+
+# ============================================================================#
+#                               [1] Data Load
 bvar_data <- read.csv(
   "Processed_Data/1e_final_data_seasonal_outliers_adjusted.csv"
 )
@@ -23,11 +25,8 @@ bvar_matrix <- as.matrix(
   bvar_data[, target_cols]
 )
 
-
-
-# ============================================================
-# 2. VARIABLE INDICES
-# ============================================================
+# ==========================================================================================#
+#                                     [2] Variables Indices
 
 gdp_idx <- which(target_cols == "gdp_growth")
 consumption_idx <- which(target_cols == "consumption_growth")
@@ -40,9 +39,9 @@ house_idx <- which(target_cols == "real_house_price_growth")
 asset_liability_idx <- which(target_cols == "asset_liability_ratio")
 
 
-# ============================================================
-# 3. PRIOR / INTEGRATION ORDER
-# ============================================================
+
+# ==========================================================================================#
+#                                     [3] Prior and Integrations
 
 is_random_walk <- c(
   FALSE,  # gdp_growth
@@ -56,9 +55,9 @@ is_random_walk <- c(
   TRUE    # asset_liability_ratio
 )
 
-# ============================================================
-# 4. SIGN RESTRICTIONS
-# ============================================================
+
+# ==========================================================================================#
+#                                     [4] Sign Restrictions.
 
 N <- ncol(bvar_matrix) # Number of Rows and Columns (Variable X Shock)
 H_total <- 20 # Time Periods (Roughly 5 years)
@@ -67,6 +66,10 @@ sign_irf <- array(
   NA, # ensures no sign restrictions 
   dim = c(N, N, H_total) # Variables Columns X Shock Columns X Time Periods
 )
+
+
+# ==========================================================================================#
+#      
 
 H_restrict <- 6 # How long the restriction will apply (1 and a half years)
 
@@ -82,9 +85,8 @@ for (h in 1:H_restrict) {  # For all the entries in the matrices when restrictio
 }
 
 
-# ============================================================
-# 5. MODEL
-# ============================================================
+# ==========================================================================================#
+#                                     [5] Model
 
 spec <- specify_bsvarSIGN$new(
   data = bvar_matrix,
@@ -94,51 +96,39 @@ spec <- specify_bsvarSIGN$new(
 )
 
 
-# ============================================================
-# ESTIMATION
-# ============================================================
+# ==========================================================================================#
+#                                     [6] Estimation
 
 run_bsvar_sign <- estimate(
   spec,
   S = 5000
 )
 
-# ============================================================
-# IRFs
-# ============================================================
+
+# ==========================================================================================#
+#                                     [7] Impulse Response
 
 irf_updated <- compute_impulse_responses(
   run_bsvar_sign,
   horizon = H_total
 )
 
-plot(irf_updated)
 
 
 
+# ==========================================================================================#
+#                                     [8] FEVD
 
-
-
-
-
-# ============================================================
-# EXECUTION
-# ============================================================
 
 # Simply pass 'irf_updated' directly into the function
 fevd_updated <- compute_fevd_from_irf(irf_updated)
 
 
-
-# ============================================================
-# USAGE IN YOUR SCRIPT
-# ============================================================
-
 # Export IRF Results to CSV
 irf_df <- export_bvar_results_to_csv(
   bvar_array = irf_updated,
   var_names  = target_cols,
-  file_name  = "IRF_Summary_Results3.csv"
+  file_name  = "IRF_Summary_Results4.csv"
 )
 
 # Export FEVD Results to CSV
@@ -151,17 +141,10 @@ fevd_df <- export_bvar_results_to_csv(
 
 
 
-
-
-
-
-
-
-library(coda)
-
 # Extract MCMC chain for structural parameters (e.g., autoregressive matrix B)
 # run_bsvar_sign$posterior$B has dimensions [N, N*p + 1, Draws]
 b_draws <- run_bsvar_sign$posterior$B
+
 
 # Pick key parameters to inspect (e.g., self-lag of policy_rate)
 policy_lag1_chain <- b_draws[policy_idx, policy_idx, ]
@@ -187,9 +170,6 @@ print(geweke_val)
 
 
 
-
-
-library(coda)
 
 # Extract MCMC chain for structural parameters (e.g., autoregressive matrix B)
 # run_bsvar_sign$posterior$B has dimensions [N, N*p + 1, Draws]
@@ -217,7 +197,6 @@ dev.off()
 
 # 2. Convert to coda mcmc object for Effective Sample Size (ESS) and Geweke diagnostic
 mcmc_chain <- coda::mcmc(policy_lag1_chain)
-
 
 # Effective Sample Size (Higher is better, >1,000 is ideal)
 ess_val <- coda::effectiveSize(mcmc_chain)
@@ -301,3 +280,180 @@ ggplot(df_comp, aes(x = Horizon, y = Median, color = Specification, linetype = S
   theme_minimal()
 
 dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bvar_data <- "Processed_Data/1e_final_data_seasonal_outliers_adjusted.csv"
+
+target_cols <- c(
+  "gdp_growth",
+  "consumption_growth",
+  "cpi_growth",
+  "saving_rate",
+  "policy_rate",
+  "interest_burden",
+  "debt_growth",
+  "real_house_price_growth",
+  "asset_liability_ratio"
+)
+
+
+
+bvar_data <- as.matrix(bvar_data[, target_cols])
+
+# ==========================================================================================#
+#                                     [2] Variable Indices
+# ==========================================================================================#
+
+# Programmatic named list for robust indexing
+idx <- setNames(seq_along(target_cols), target_cols)
+idx
+# ==========================================================================================#
+#                                     [3] Prior Specifications
+# ==========================================================================================#
+
+# bsvarSIGNs convention: TRUE = Random Walk (Mean = 1), FALSE = White Noise (Mean = 0)
+is_random_walk <- c(
+  gdp_growth              = FALSE,
+  consumption_growth      = FALSE,
+  cpi_growth              = FALSE,
+  saving_rate             = TRUE,
+  policy_rate             = TRUE,
+  interest_burden         = TRUE,
+  debt_growth             = TRUE,
+  real_house_price_growth = FALSE,
+  asset_liability_ratio   = TRUE
+)
+
+# ==========================================================================================#
+#                                     [4] Sign Restrictions
+# ==========================================================================================#
+
+N <- ncol(bvar_matrix)
+H_total <- 20    # IRF Horizon
+H_restrict <- 6  # Restriction horizon (0 to 5)
+
+sign_irf <- array(NA, dim = c(N, N, H_total))
+
+# Monetary Policy Shock (shock column = policy_rate index)
+shock_col <- idx["policy_rate"]
+
+for (h in 1:H_restrict) {
+  sign_irf[idx["policy_rate"],     shock_col, h] <-  1  # Policy rate increases
+  sign_irf[idx["cpi_growth"],      shock_col, h] <- -1  # Inflation falls
+  sign_irf[idx["interest_burden"], shock_col, h] <-  1  # Debt burden increases
+  sign_irf[idx["debt_growth"],     shock_col, h] <- -1  # Credit growth slows
+}
+
+# ==========================================================================================#
+#                                     [5] Model Specification
+# ==========================================================================================#
+
+library(bsvarSIGNs)
+
+# Use multi-core execution (detect available cores)
+n_cores <- max(1, parallel::detectCores() - 1)
+
+spec <- specify_bsvarSIGN$new(
+  data         = bvar_matrix,
+  p            = 4,
+  sign_irf     = sign_irf,
+  stationary   = is_random_walk,
+  hyper_lambda = TRUE,  # Estimate GLP overall shrinkage
+  hyper_mu     = TRUE,  # Estimate sum-of-coefficients dummy prior
+  hyper_delta  = TRUE,  # Estimate single-unit-root dummy prior
+  hyper_psi    = TRUE,  # Estimate scale hyperparameters
+  mc.cores     = n_cores
+)
+
+# Optional: Find optimal hyperparameter starting points using Adaptive Metropolis
+set.seed(123)
+spec$estimate_hyper(S = 2000, burn_in = 1000)
+
+# ==========================================================================================#
+#                                     [6] Estimation & Analysis
+# ==========================================================================================#
+
+set.seed(123)
+run_bsvar_sign <- estimate(
+  spec,
+  S = 1000)
+
+
+
+
+names(run_bsvar_sign$posterior)
+
+hyper_draws <- run_bsvar_sign$posterior$hyper
+
+t(apply(hyper_draws, 1, function(x) c(
+  Mean   = mean(x),
+  SD     = sd(x),
+  q025   = quantile(x, 0.025),
+  Median = median(x),
+  q975   = quantile(x, 0.975)
+)))
+
+
+# 1. Define hyperparameter names matching N = 9 variables
+hyper_names <- c(
+  paste0("Psi_", target_cols), # Rows 1-9: Initial residual variances / scales
+  "lambda (Overall Tightness)",# Row 10: Minnesota overall shrinkage
+  "alpha (Lag Decay Exponent)",# Row 11: Lag decay power
+  "a_0 (Gamma Shape)",         # Row 12
+  "mu (Sum-of-Coeff Weight)",  # Row 13
+  "mu_mu (Prior Mean mu)",     # Row 14
+  "sigma_mu (Prior SD mu)",    # Row 15
+  "delta (Unit-Root Weight)"   # Row 16
+)
+
+# 2. Extract and format summary with row names
+hyper_summary <- t(apply(run_bsvar_sign$posterior$hyper, 1, function(x) c(
+  Mean   = mean(x),
+  SD     = sd(x),
+  q025   = quantile(x, 0.025),
+  Median = median(x),
+  q975   = quantile(x, 0.975)
+)))
+
+rownames(hyper_summary) <- hyper_names
+print(round(hyper_summary, 4))
+
+
+
+
+
+
+export_hyperparameters(
+  estimation_obj = run_bsvar_sign,
+  target_cols    = target_cols,
+  file_path      = "Output/hyperparameter_summary.csv"
+)
+
+
+
+
+# Verify estimated hyperparameters
+summary(run_bsvar_sign)
+
+# Compute Impulse Responses (IRFs)
+irf <- compute_impulse_responses(run_bsvar_sign, horizon = H_total)
+
+# Plot IRFs with 68% credible intervals
+plot(irf, probability = 0.68)

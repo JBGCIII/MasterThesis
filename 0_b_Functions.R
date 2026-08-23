@@ -1,7 +1,7 @@
 #####################################0. FUNCTIONS #######################################
 ##       
 
-#Functions in order of appearance with purpuose.
+#Functions in order of appearance with purpuose.e
 # (1) download_pxweb
 # (2) get_riksbank_series
 # (3) compute_fevd_from_irf
@@ -451,4 +451,72 @@ plot_single_irf <- function(irf_df,
   }
   
   return(p)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+compute_fevd_from_irf2 <- function(irf_obj) {
+  
+  # 1. Extract 4D numeric array [Variable, Shock, Horizon, Draw]
+  if (is.array(irf_obj)) {
+    irf_array <- irf_obj
+  } else if (is.list(irf_obj) && !is.null(irf_obj$posterior$irf)) {
+    irf_array <- irf_obj$posterior$irf
+  } else if (is.list(irf_obj) && !is.null(irf_obj$irf)) {
+    irf_array <- irf_obj$irf
+  } else if (inherits(irf_obj, "PosteriorIRF")) {
+    irf_array <- irf_obj[,,,]
+  } else {
+    stop("Could not extract 4D array from irf_obj.")
+  }
+
+  dims <- dim(irf_array)
+  N <- dims[1]
+  H <- dims[3]
+  S <- dims[4]
+  
+  message(paste("Processing FEVD for N =", N, "variables over H =", H, "horizons across S =", S, "draws..."))
+
+  # 2. Square impulse responses (squared structural impacts)
+  irf_sq <- irf_array^2
+  
+  # 3. Compute cumulative variance across horizons (dim 3)
+  # Apply cumulative sum along the horizon dimension for each variable, shock, and draw
+  fevd_cum <- apply(irf_sq, c(1, 2, 4), cumsum)
+  
+  # Re-order dimensions back to [Variable, Shock, Horizon, Draw]
+  fevd_cum <- aperm(fevd_cum, c(2, 3, 1, 4))
+
+  # 4. Normalize by total variance across all shocks (sum over dim 2)
+  fevd <- array(0, dim = c(N, N, H, S))
+  
+  for (h in 1:H) {
+    # Total variance for each variable per draw at horizon h
+    total_var <- apply(fevd_cum[,, h, , drop = FALSE], c(1, 4), sum)
+    
+    for (j in 1:N) { # Loop over shocks to normalize
+      fevd[, j, h, ] <- fevd_cum[, j, h, ] / total_var
+    }
+  }
+  
+  dimnames(fevd) <- dimnames(irf_array)
+  return(fevd)
 }

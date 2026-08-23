@@ -1,0 +1,17 @@
+"Hyperparameter","Mean","SD","q025","Median","q975"
+"Psi_gdp_growth",0.4787,0.1015,0.3096,0.4678,0.7041
+"Psi_consumption_growth",0.3816,0.1678,0.1327,0.3573,0.7765
+"Psi_cpi_growth",1.1486,0.1154,0.9285,1.1452,1.3787
+"Psi_saving_rate",16.4825,4.9324,8.5688,15.9193,28.2461
+"Psi_policy_rate",12.3698,3.7751,6.6197,11.8798,21.2521
+"Psi_interest_burden",2.7407,0.7897,1.4836,2.6625,4.5566
+"Psi_debt_growth",23.8892,7.1004,12.5578,22.9854,40.067
+"Psi_real_house_price_growth",0.4334,0.1389,0.2114,0.4174,0.7471
+"Psi_asset_liability_ratio",0.8507,0.2619,0.4363,0.822,1.4348
+"lambda (Overall Tightness)",0.7823,0.2404,0.405,0.7483,1.3238
+"alpha (Lag Decay Exponent)",19.7039,5.6898,10.7184,19.1199,32.9231
+"a_0 (Gamma Shape)",0.0943,0.03,0.0475,0.0906,0.1641
+"mu (Sum-of-Coeff Weight)",1,0,1,1,1
+"mu_mu (Prior Mean mu)",1,0,1,1,1
+"sigma_mu (Prior SD mu)",1,0,1,1,1
+"delta (Unit-Root Weight)",0.8,0,0.8,0.8,0.8

@@ -21,9 +21,30 @@ target_cols <- c(
   "asset_liability_ratio"
 )
 
-bvar_matrix <- as.matrix(
+
+# ==========================================================================================#
+#                                     [2] Creating Matrices
+
+# [Model 1]: 
+bvar_matrix_policy_shock <- as.matrix(
   bvar_data[, target_cols]
 )
+
+# [Model 2]: How does the Swedish Economy react to prolonged borrowing  restriction?
+bvar_matrix_credit_supply_shock <- as.matrix(
+  bvar_data[, target_cols]
+)
+
+# [Model 3]: How does the Swedish Economy react to prolonged housing price shock?
+bvar_matrix_demand_shock <- as.matrix(
+  bvar_data[, target_cols]
+)
+
+# [Model 4]: How does the Swedish Economy react to prolonged housing wealth contraction?
+bvar_matrix_wealth_shock <- as.matrix(
+  bvar_data[, target_cols]
+)
+
 
 # ==========================================================================================#
 #                                     [2] Variables Indices
@@ -44,7 +65,7 @@ asset_liability_idx <- which(target_cols == "asset_liability_ratio")
 
 # bsvarSIGNs convention: TRUE = Random Walk (Mean = 1), FALSE = White Noise (Mean = 0)
 is_random_walk <- c(
-  FALSE,  # gdp_growth (non)
+  FALSE,  # gdp_growth 
   FALSE,  # consumption_growth
   FALSE,  # cpi_growth
   TRUE,   # saving_rate
@@ -55,34 +76,65 @@ is_random_walk <- c(
   TRUE    # asset_liability_ratio
 )
 
-
 # ==========================================================================================#
 #                                     [4] Sign Restrictions.
 
 N <- ncol(bvar_matrix) # Number of Rows and Columns (Variable X Shock)
-H_total <- 20 # Time Periods (Roughly 5 years)
+H_total <- 20 # Time Periods (5 years)
 
-sign_irf <- array(
+
+##[Model 1]
+sign_irf_policy <- array(
+  NA, # ensures no sign restrictions 
+  dim = c(N, N, H_total) # Variables Columns X Shock Columns X Time Periods
+)
+
+##[Model 2]
+sign_irf_credit_supply <- array(
+  NA, # ensures no sign restrictions 
+  dim = c(N, N, H_total) # Variables Columns X Shock Columns X Time Periods
+)
+
+##[Model 3]
+sign_irf_demand_shock <- array(
+  NA, # ensures no sign restrictions 
+  dim = c(N, N, H_total) # Variables Columns X Shock Columns X Time Periods
+)
+
+##[Model 4]
+sign_irf_wealth_shock <- array(
   NA, # ensures no sign restrictions 
   dim = c(N, N, H_total) # Variables Columns X Shock Columns X Time Periods
 )
 
 
 # ==========================================================================================#
-#      
+#                                     [4] Sign Restrictions.
 
-H_restrict <- 6 # How long the restriction will apply (1 and a half years)
 
+## [Model 1: Policy Rate Shock]
+#How does the Swedish Economy react to a prolonged monetary policy contraciton?
+H_restrict_policy <- 6 # How long the restriction will apply (1 and a half years)
+# Why not 8? Mostly due to the lenght it takes to measures the model.
 
 # Monetary policy shock
-for (h in 1:H_restrict) {  # For all the entries in the matrices when restriction
+for (h in 1:H_restrict_policy) {  # For all the entries in the matrices when restriction
                            # applies, apply the following sign restriction.
 
-  sign_irf[policy_idx, policy_idx, h] <-  1  # A positive shock in the policy col
-  sign_irf[cpi_idx, policy_idx, h] <-     -1
-  sign_irf[interest_burden_idx, policy_idx, h] <-  1
-  sign_irf[debt_idx, policy_idx, h] <-    -1
+  sign_irf[policy_idx, policy_idx, h] <-  1  # Positive shock in policy
+  sign_irf[cpi_idx, policy_idx, h] <-     -1 # Negative shock in CPI
+  sign_irf[interest_burden_idx, policy_idx, h] <-  1 # Positive shock in Interest burden
+  sign_irf[debt_idx, policy_idx, h] <-    -1 # Negative shock in debt
 }
+
+## [Model 1: Policy Rate Shock]
+
+
+
+
+
+
+
 
 
 # ==========================================================================================#
@@ -106,16 +158,16 @@ spec <- specify_bsvarSIGN$new(
 
 # Optional: Find optimal hyperparameter starting points using Adaptive Metropolis
 set.seed(321)
-spec$estimate_hyper(S = 2000, burn_in = 1000)
+spec$estimate_hyper(S = 20000, burn_in = 10000)
 
 # ==========================================================================================#
 #                                     [6] Estimation & Analysis
 # ==========================================================================================#
 
-set.seed(123)
+
 run_bsvar_sign <- estimate(
   spec,
-  S = 1000)
+  S = 10000)
 
 
 export_hyperparameters(
@@ -215,32 +267,6 @@ df_gdp_policy <- get_irf_median_df(
   target_cols  = target_cols
 )
 
-# Plot single IRF with 68% credible interval band
-library(ggplot2)
-
-
-
-png(
-  "Test4.png",
-  width  = 3200,
-  height = 2600,
-  res    = 300
-)
-
-
-ggplot(df_gdp_policy, aes(x = Horizon, y = Median)) +
-  geom_ribbon(aes(ymin = Lower_68, ymax = Upper_68), fill = "steelblue", alpha = 0.3) +
-  geom_line(color = "darkblue", linewidth = 1.2) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-  labs(
-    title = "Response of GDP Growth to Policy Rate Shock",
-    x = "Horizon", 
-    y = "Percentage Points"
-  ) +
-  theme_minimal()
-
-  dev.off()
-
 
 
 
@@ -261,4 +287,72 @@ plot_single_irf(
   shock_name    = "Monetary Policy Shock",
   output_path   = "Output/IRF_GDP_PolicyRate.png"
 )
+
+
+
+# 1. Extract IRF data frame
+df_gdp_policy <- get_irf_median_df(
+  irf_obj      = irf_updated, 
+  response_var = "saving_rate", 
+  shock_var    = "policy_rate", 
+  label_name   = "Baseline Model",
+  target_cols  = target_cols
+)
+
+# 2. Render and save PNG
+plot_single_irf(
+  irf_df        = df_gdp_policy,
+  response_name = "Savings Rate",
+  shock_name    = "Monetary Policy Shock",
+  output_path   = "Output/IRF_GDP_Savings_Rate.png"
+)
+
+
+
+
+
+
+# 1. Extract IRF data frame
+df_gdp_policy <- get_irf_median_df(
+  irf_obj      = irf_updated, 
+  response_var = "asset_liability_ratio", 
+  shock_var    = "policy_rate", 
+  label_name   = "Baseline Model",
+  target_cols  = target_cols
+)
+
+# 2. Render and save PNG
+plot_single_irf(
+  irf_df        = df_gdp_policy,
+  response_name = "Asset to Liability Ratio",
+  shock_name    = "Monetary Policy Shock",
+  output_path   = "Output/IRF_Asset_to_liability.png"
+)
+
+
+
+
+
+
+target_cols <- c(
+  "gdp_growth",
+  "consumption_growth",
+  "cpi_growth",
+  "saving_rate",
+  "policy_rate",
+  "interest_burden",
+  "debt_growth",
+  "real_house_price_growth",
+  "asset_liability_ratio"
+)
+
+
+
+
+
+
+# Row 10 is lambda
+plot(run_bsvar_sign$posterior$hyper[10, ], type = "l", ylab = "lambda", col = "navy")
+
+plot(run_bsvar_sign$posterior$hyper[11, ], type = "l", ylab = "alpha", col = "darkgreen")
 

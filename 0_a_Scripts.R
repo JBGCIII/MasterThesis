@@ -36,3 +36,6 @@ library(bsvars) #Bayesian Estimation of Structural Vector Autoregressive Models
 library(bsvarSIGNs) # Add-on package Bayesian Estimation of Structural Vector 
 # Autoregressions Identified by Sign, Zero, and Narrative Restrictions
 
+
+install.packages("future")
+
