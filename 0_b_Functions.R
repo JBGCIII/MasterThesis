@@ -1,18 +1,28 @@
-#####################################0. FUNCTIONS #######################################
-##       
+###############################################################################
+################################# 0.FUNCTIONS #################################
+###############################################################################
 
 #Functions in order of appearance with purpuose.e
 # (1) download_pxweb
 # (2) get_riksbank_series
-# (3) compute_fevd_from_irf
-# (4)export_bvar_results_to_csv
-# (5) get_irf_median_df
+#=========================#
+# (3) export_hyperparameters
+# (4) compute_and_export_ess
+#=========================#
+# (5) compute_fevd_from_irf [Very Important]
+# (6) export_bvar_results_to_csv
+# (7) get_irf_median_df
+# (8) plot_single_irf
 
-# ========================== 1a_Data_Set_Creation.R ====================================#
+
+#============================================================================#
+#                     [1] FUNCTION USED IN DATA CREATION
+#============================================================================#
 
 ## (1) download_pxweb
-# Purpose: SCB PXWEB downloader, helps to streamline the download from SCB APIs using
-# the pwxweb query.
+# Purpose: SCB PXWEB downloader, helps to streamline the download 
+#from SCB APIs using the pwxweb query.
+
 download_pxweb <- function(url, query){
 
   pxq <- pxweb_query(query) # Converts list into a valid PX-Web query object.
@@ -24,6 +34,7 @@ download_pxweb <- function(url, query){
   )
 }
 
+#------------------------------------------------------------------------------#
 
 ## (2) get_riksbank_series
 # Purpose: Helps to streamline the download from Riksbanken API
@@ -61,11 +72,110 @@ get_riksbank_series <- function(series_id,
 }
 
 
-# ========================== 2_BVARSIGN.R====================================#
+#============================================================================#
+#                     [2] FUNCTIONS FOR MODEL DIAGNOSTICS
+#============================================================================#
+# Functions here are mostly to avoid large codes chain in the model estimation,
+# ease extractions, and quickly inform me if I needed to adjust things for a
+# better model output, instead of looking it myself. I felt it was really
+# usefull.
+
+## (3) export_hyperparameters
+# Purpose: This function allows to easily extract hyperparamaters for a
+# estimated model for diagnostics.
+
+export_hyperparameters <- function(estimation_obj, target_cols, file_path = "Output/hyperparameters.csv") {
+  
+  # Ensure target directory exists
+  dir.create(dirname(file_path), showWarnings = FALSE, recursive = TRUE)
+  
+  hyper_names <- c(
+    paste0("Psi_", target_cols),
+    "lambda (Overall Tightness)",
+    "alpha (Lag Decay Exponent)",
+    "a_0 (Gamma Shape)",
+    "mu (Sum-of-Coeff Weight)",
+    "mu_mu (Prior Mean mu)",
+    "sigma_mu (Prior SD mu)",
+    "delta (Unit-Root Weight)"
+  )
+  
+  hyper_draws <- estimation_obj$posterior$hyper
+  
+  hyper_summary <- t(apply(hyper_draws, 1, function(x) c(
+    Mean   = mean(x),
+    SD     = sd(x),
+    q025   = as.numeric(quantile(x, 0.025)),
+    Median = median(x),
+    q975   = as.numeric(quantile(x, 0.975))
+  )))
+  
+  hyper_df <- data.frame(
+    Hyperparameter = hyper_names,
+    round(hyper_summary, 4),
+    check.names = FALSE
+  )
+  
+  write.csv(hyper_df, file_path, row.names = FALSE)
+  message("Hyperparameters successfully exported to: ", file_path)
+  return(invisible(hyper_df))
+}
+
+
+#------------------------------------------------------------------------------#
+
+## (4) compute_and_export_ess
+# Purpose: This function allows to easily extract effective sample size from
+# a model and export it as CSV. Gives you insight right away. That way you
+# don't need to find it yourself while looking trough the code.
+
+compute_and_export_ess <- function(model_obj, 
+                                   lambda_idx = 10, 
+                                   alpha_idx = 11, 
+                                   file_path = NULL) {
+  
+  # 1. Safely extract hyperparameter posterior chains
+  if (is.null(model_obj$posterior$hyper)) {
+    stop("The model object does not contain 'posterior$hyper'. Check the object structure.")
+  }
+  
+  posterior_lambda <- model_obj$posterior$hyper[lambda_idx, ]
+  posterior_alpha  <- model_obj$posterior$hyper[alpha_idx, ]
+  
+  # 2. Compute ESS using coda
+  ess_lambda <- coda::effectiveSize(coda::as.mcmc(posterior_lambda))
+  ess_alpha  <- coda::effectiveSize(coda::as.mcmc(posterior_alpha))
+  
+  # 3. Create summary data frame
+  ess_summary <- data.frame(
+    Parameter = c("Lambda", "Alpha"),
+    ESS       = c(round(as.numeric(ess_lambda), 1), 
+                  round(as.numeric(ess_alpha), 1))
+  )
+  
+  # 4. Optional CSV export
+  if (!is.null(file_path)) {
+    # Automatically create output folder structure if it doesn't exist
+    dir_path <- dirname(file_path)
+    if (!dir.exists(dir_path)) {
+      dir.create(dir_path, recursive = TRUE)
+    }
+    
+    write.csv(ess_summary, file = file_path, row.names = FALSE)
+    message(paste("ESS diagnostics saved to:", file_path))
+  }
+  
+  return(ess_summary)
+}
+
+
+#============================================================================#
+#                     [3] FUNCTIONS USED IN BVARSIGN
+#============================================================================#
 
 #This is where functions were necessary. Unfortanately the BVARSIGN package
-#encounters issues when dealing with large calculations and presents the 
-#following message  "C:\Program Files\R\R-4.5.2\bin\R.exe '--no-save', 
+#encounters issues when dealing with large calculations and presents the
+#following message  "C:\Program Files\R\R-4.5.2\bin\R.exe '--no-save',
 #'--no-restore'" terminated with exit code: -1073741819. when using
 # FEVD and historical decomposition.
 # This is not surprising considering we are dealing with 4D objects that can
@@ -74,8 +184,9 @@ get_riksbank_series <- function(series_id,
 # The IRF however still works, and the following allows to increase the draws
 # while still being able to get the FEVD values.
 
+#------------------------------------------------------------------------------#
 
-## (3) compute_fevd_from_irf
+## (5) compute_fevd_from_irf
 # Purpose: Used instead of compute_variance_decompositions() as it crashed.
 # The purpouse is to compute FEVD manually by auto extracting the
 # arrays. Due to multiple FEVD being necessar, having the whole
@@ -103,7 +214,8 @@ compute_fevd_from_irf <- function(irf_obj) {
   H <- dims[3]
   S <- dims[4]
   
-  message(paste("Processing FEVD for N =", N, "variables over H =", H, "horizons across S =", S, "draws..."))
+  message(paste("Processing FEVD for N =", N, "variables over H =", 
+  H, "horizons across S =", S, "draws..."))
 
   # 2. Square responses (variance per shock per draw)
   irf_sq <- irf_array^2
@@ -131,14 +243,15 @@ compute_fevd_from_irf <- function(irf_obj) {
   return(fevd)
 }
 
+#------------------------------------------------------------------------------#
 
-
-## (4) export_bvar_results_to_csv
+## (6) export_bvar_results_to_csv
 # Purpose: This allows to export the IRF & FEVD to CSV for analysis
 # Note, I did not export the full posterior since it made
 # a files in the GBs.
 
-export_bvar_results_to_csv <- function(bvar_array, var_names, file_name, shock_names = var_names) {
+export_bvar_results_to_csv <- function(bvar_array, var_names, 
+file_name, shock_names = var_names) {
   
   # 1. Automatically handle raw arrays or package list objects
   if (is.array(bvar_array)) {
@@ -189,151 +302,67 @@ export_bvar_results_to_csv <- function(bvar_array, var_names, file_name, shock_n
 }
 
 
-## (5) get_irf_median_df
+compute_fevd_from_irf2 <- function(irf_obj) {
+  
+  # 1. Extract 4D numeric array [Variable, Shock, Horizon, Draw]
+  if (is.array(irf_obj)) {
+    irf_array <- irf_obj
+  } else if (is.list(irf_obj) && !is.null(irf_obj$posterior$irf)) {
+    irf_array <- irf_obj$posterior$irf
+  } else if (is.list(irf_obj) && !is.null(irf_obj$irf)) {
+    irf_array <- irf_obj$irf
+  } else if (inherits(irf_obj, "PosteriorIRF")) {
+    irf_array <- irf_obj[,,,]
+  } else {
+    stop("Could not extract 4D array from irf_obj.")
+  }
+
+  dims <- dim(irf_array)
+  N <- dims[1]
+  H <- dims[3]
+  S <- dims[4]
+  
+  message(paste("Processing FEVD for N =", N, "variables over H =", H, "horizons across S =", S, "draws..."))
+
+  # 2. Square impulse responses (squared structural impacts)
+  irf_sq <- irf_array^2
+  
+  # 3. Compute cumulative variance across horizons (dim 3)
+  # Apply cumulative sum along the horizon dimension for each variable, shock, and draw
+  fevd_cum <- apply(irf_sq, c(1, 2, 4), cumsum)
+  
+  # Re-order dimensions back to [Variable, Shock, Horizon, Draw]
+  fevd_cum <- aperm(fevd_cum, c(2, 3, 1, 4))
+
+  # 4. Normalize by total variance across all shocks (sum over dim 2)
+  fevd <- array(0, dim = c(N, N, H, S))
+  
+  for (h in 1:H) {
+    # Total variance for each variable per draw at horizon h
+    total_var <- apply(fevd_cum[,, h, , drop = FALSE], c(1, 4), sum)
+    
+    for (j in 1:N) { # Loop over shocks to normalize
+      fevd[, j, h, ] <- fevd_cum[, j, h, ] / total_var
+    }
+  }
+  
+  dimnames(fevd) <- dimnames(irf_array)
+  return(fevd)
+}
+
+#============================================================================#
+#                     [4] FUNCTIONS FOR IRF
+#============================================================================#
+# Functions here are here to ease the way in which IRF are extracted. It
+# was not strictly necssary but I found that not having the same plot repeated
+# over again saves on line of code.
+
+#------------------------------------------------------------------------------#
+
+## (7) get_irf_median_df
 # Purpose: This function allows to easily extract median IRF for a specific 
 # response variable & shock. Unfourtanely the bvarsign nor the BVAR
 # allow to export a single row from the IRF and instead plot all 9X9.
-
-get_irf_median_df <- function(irf_obj, response_var, shock_var, label_name, target_cols) {
-  arr <- if (is.array(irf_obj)) irf_obj else irf_obj$posterior$irf
-  
-  r_idx <- which(target_cols == response_var)
-  s_idx <- which(target_cols == shock_var)
-  
-  if (length(r_idx) == 0 || length(s_idx) == 0) {
-    stop("Variable or shock name not found in target_cols.")
-  }
-  
-  sub_mat <- arr[r_idx, s_idx, , ]
-  med <- apply(sub_mat, 1, median, na.rm = TRUE)
-  
-  data.frame(
-    Horizon = 1:dim(arr)[3],
-    Median = med,
-    Specification = label_name
-  )
-}
-
-
-
-
-
-export_hyperparameters <- function(estimation_obj, target_cols, file_path = "Output/hyperparameters.csv") {
-  
-  # Ensure target directory exists
-  dir.create(dirname(file_path), showWarnings = FALSE, recursive = TRUE)
-  
-  hyper_names <- c(
-    paste0("Psi_", target_cols),
-    "lambda (Overall Tightness)",
-    "alpha (Lag Decay Exponent)",
-    "a_0 (Gamma Shape)",
-    "mu (Sum-of-Coeff Weight)",
-    "mu_mu (Prior Mean mu)",
-    "sigma_mu (Prior SD mu)",
-    "delta (Unit-Root Weight)"
-  )
-  
-  hyper_draws <- estimation_obj$posterior$hyper
-  
-  hyper_summary <- t(apply(hyper_draws, 1, function(x) c(
-    Mean   = mean(x),
-    SD     = sd(x),
-    q025   = as.numeric(quantile(x, 0.025)),
-    Median = median(x),
-    q975   = as.numeric(quantile(x, 0.975))
-  )))
-  
-  hyper_df <- data.frame(
-    Hyperparameter = hyper_names,
-    round(hyper_summary, 4),
-    check.names = FALSE
-  )
-  
-  write.csv(hyper_df, file_path, row.names = FALSE)
-  message("Hyperparameters successfully exported to: ", file_path)
-  return(invisible(hyper_df))
-}
-
-
-
-
-
-
-
-
-check_mcmc_convergence <- function(estimation_obj, 
-                                    var_idx, 
-                                    lag_idx = var_idx, 
-                                    var_names = NULL, 
-                                    output_path = "Output/MCMC_Diagnostics.png") {
-  
-  # Ensure target output directory exists
-  dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
-  
-  # Extract autoregressive parameter matrix B [N, N*p + 1, Draws]
-  b_draws <- estimation_obj$posterior$B
-  
-  # Extract chain for selected parameter
-  param_chain <- b_draws[var_idx, lag_idx, ]
-  
-  # Resolve variable labels for plot headers
-  dep_name <- if (!is.null(var_names)) var_names[var_idx] else paste("Var", var_idx)
-  lag_name <- if (!is.null(var_names)) var_names[lag_idx] else paste("Var", lag_idx)
-  param_title <- paste0("Equation: ", dep_name, " | Lag: ", lag_name)
-  
-  # ----------------------------------------------------------------------------
-  # 1. Export Diagnostic Plot Matrix (Trace + ACF)
-  # ----------------------------------------------------------------------------
-  png(output_path, width = 3200, height = 2600, res = 300)
-  on.exit(dev.off(), add = TRUE) # Ensures graphics device closes safely on error
-  
-  par(mfrow = c(2, 1), mar = c(4.5, 4.5, 3, 1), family = "sans")
-  
-  # Trace Plot
-  plot(param_chain, type = "l", col = "#1F4E78", lwd = 1.2,
-       main = paste("MCMC Trace Plot -", param_title),
-       xlab = "MCMC Iteration", ylab = "Draw Value", grid())
-  abline(h = mean(param_chain), col = "firebrick", lty = 2, lwd = 1.5)
-  
-  # ACF Plot
-  acf(param_chain, main = paste("Autocorrelation Function (ACF) -", param_title),
-      col = "#1F4E78", lwd = 2)
-  
-  par(mfrow = c(1, 1)) # Reset grid
-  
-  # ----------------------------------------------------------------------------
-  # 2. Compute Convergence Metrics via coda
-  # ----------------------------------------------------------------------------
-  mcmc_chain <- coda::mcmc(param_chain)
-  
-  ess_val    <- coda::effectiveSize(mcmc_chain)
-  geweke_obj <- coda::geweke.diag(mcmc_chain)
-  geweke_z   <- as.numeric(geweke_obj$z)
-  
-  # Evaluate convergence threshold (|Z| < 1.96)
-  convergence_pass <- abs(geweke_z) < 1.96
-  
-  metrics_df <- data.frame(
-    Parameter     = param_title,
-    ESS           = round(as.numeric(ess_val), 2),
-    Geweke_Zscore = round(geweke_z, 4),
-    Converged_5pct = convergence_pass
-  )
-  
-  message("Diagnostics exported to: ", output_path)
-  return(metrics_df)
-}
-
-
-
-
-
-
-
-
-
-
 
 get_irf_median_df <- function(irf_obj, 
                               response_var, 
@@ -402,13 +431,14 @@ get_irf_median_df <- function(irf_obj,
 }
 
 
+#------------------------------------------------------------------------------#
 
-
-
-
-
-
-
+## (8) plot_single_irf
+# This is a function I decided to make in order to export a single IRF and not
+# the entire 9x9 array. Of course, I later realized it was far less work to
+# export the 9X1 (Variable * Shock) but having the ability the export a single
+# IRF is still nice and will be used in the thesis to extract a particular
+# interesting result.
 
 
 plot_single_irf <- function(irf_df, 
@@ -451,72 +481,4 @@ plot_single_irf <- function(irf_df,
   }
   
   return(p)
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-compute_fevd_from_irf2 <- function(irf_obj) {
-  
-  # 1. Extract 4D numeric array [Variable, Shock, Horizon, Draw]
-  if (is.array(irf_obj)) {
-    irf_array <- irf_obj
-  } else if (is.list(irf_obj) && !is.null(irf_obj$posterior$irf)) {
-    irf_array <- irf_obj$posterior$irf
-  } else if (is.list(irf_obj) && !is.null(irf_obj$irf)) {
-    irf_array <- irf_obj$irf
-  } else if (inherits(irf_obj, "PosteriorIRF")) {
-    irf_array <- irf_obj[,,,]
-  } else {
-    stop("Could not extract 4D array from irf_obj.")
-  }
-
-  dims <- dim(irf_array)
-  N <- dims[1]
-  H <- dims[3]
-  S <- dims[4]
-  
-  message(paste("Processing FEVD for N =", N, "variables over H =", H, "horizons across S =", S, "draws..."))
-
-  # 2. Square impulse responses (squared structural impacts)
-  irf_sq <- irf_array^2
-  
-  # 3. Compute cumulative variance across horizons (dim 3)
-  # Apply cumulative sum along the horizon dimension for each variable, shock, and draw
-  fevd_cum <- apply(irf_sq, c(1, 2, 4), cumsum)
-  
-  # Re-order dimensions back to [Variable, Shock, Horizon, Draw]
-  fevd_cum <- aperm(fevd_cum, c(2, 3, 1, 4))
-
-  # 4. Normalize by total variance across all shocks (sum over dim 2)
-  fevd <- array(0, dim = c(N, N, H, S))
-  
-  for (h in 1:H) {
-    # Total variance for each variable per draw at horizon h
-    total_var <- apply(fevd_cum[,, h, , drop = FALSE], c(1, 4), sum)
-    
-    for (j in 1:N) { # Loop over shocks to normalize
-      fevd[, j, h, ] <- fevd_cum[, j, h, ] / total_var
-    }
-  }
-  
-  dimnames(fevd) <- dimnames(irf_array)
-  return(fevd)
 }

@@ -22,7 +22,6 @@ library(urca)  # Analysis of Integrated and Cointegrated Time Series
 library(dynlm)  # Dynamic Linear Regression
 library(xts) # Exstensible Time Series (I would have used build in Ts if not 
              #for having to split dates in ADF test)
-
 library(tsoutliers)
 library(forecast)
 library(coda) # Used for formal MCMC convergence diagnostics
@@ -38,4 +37,3 @@ library(bsvarSIGNs) # Add-on package Bayesian Estimation of Structural Vector
 
 
 install.packages("future")
-
