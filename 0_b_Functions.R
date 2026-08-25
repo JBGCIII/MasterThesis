@@ -14,7 +14,6 @@
 # (7) get_irf_median_df
 # (8) plot_single_irf
 
-
 #============================================================================#
 #                     [1] FUNCTION USED IN DATA CREATION
 #============================================================================#
@@ -350,6 +349,120 @@ compute_fevd_from_irf2 <- function(irf_obj) {
   return(fevd)
 }
 
+
+#------------------------------------------------------------------------------#
+
+## (6) export_bvar_results_to_csv
+# Purpose: Allows to compute the historical decomposition since the BVARSING
+# command creashes.
+compute_hd_batched <- function(posterior_obj, horizon = NULL, batch_size = 1000) {
+  
+  if (is.null(horizon)) horizon <- nrow(posterior_obj$specify$data)
+
+  # Fetch total draws available
+  irf_all   <- compute_impulse_responses(posterior_obj, horizon = horizon)
+  shock_all <- compute_structural_shocks(posterior_obj)
+  
+  N     <- dim(irf_all)[1]
+  T_obs <- dim(shock_all)[2]
+  S     <- dim(irf_all)[4]
+  
+  num_batches <- ceiling(S / batch_size)
+  cat(sprintf("Processing %d draws across %d batches...\n", S, num_batches))
+  
+  # Allocate memory ONLY for summary statistics (negligible memory footprint)
+  hd_mean <- array(0, dim = c(N, N, T_obs))
+  
+  # Accumulators for quantile estimates across batches
+  for (b in 1:num_batches) {
+    idx_start <- (b - 1) * batch_size + 1
+    idx_end   <- min(b * batch_size, S)
+    batch_indices <- idx_start:idx_end
+    b_size <- length(batch_indices)
+    
+    # Pre-allocate array ONLY for current batch
+    hd_batch <- array(0, dim = c(N, N, T_obs, b_size))
+    
+    for (s_idx in 1:b_size) {
+      s <- batch_indices[s_idx]
+      for (t in 1:T_obs) {
+        for (j in 1:t) {
+          irf_mat    <- irf_all[, , j, s]
+          shock_diag <- diag(shock_all[, t - j + 1, s])
+          hd_batch[, , t, s_idx] <- hd_batch[, , t, s_idx] + (irf_mat %*% shock_diag)
+        }
+      }
+    }
+    
+    
+    # Accumulate running mean
+    hd_mean <- hd_mean + apply(hd_batch, c(1, 2, 3), sum)
+    
+    # Clean up RAM immediately
+    rm(hd_batch)
+    gc(verbose = FALSE)
+    cat(sprintf("Batch %d/%d completed.\n", b, num_batches))
+  }
+  
+  # Final scaling
+  hd_mean <- hd_mean / S
+  
+  var_names <- colnames(posterior_obj$specify$data)
+  dimnames(hd_mean) <- list(Variable = var_names, Shock = var_names, Time = 1:T_obs)
+  
+  return(hd_mean)
+}
+
+#------------------------------------------------------------------------------#
+
+## (8) export_bvar_results_to_csv
+# Purpose: Allows to save the historical function.
+
+save_hd_batched_to_csv <- function(hd_matrix, file_path = "hd_summary_results.csv", dates = NULL) {
+  # Get dimensions for 3D array [N_vars x N_shocks x T_obs]
+  N_vars   <- dim(hd_matrix)[1]
+  N_shocks <- dim(hd_matrix)[2]
+  T_obs    <- dim(hd_matrix)[3]
+  
+  var_names   <- dimnames(hd_matrix)$Variable
+  shock_names <- dimnames(hd_matrix)$Shock
+  
+  if (is.null(var_names))   var_names   <- paste0("Var_", 1:N_vars)
+  if (is.null(shock_names)) shock_names <- paste0("Shock_", 1:N_shocks)
+  if (is.null(dates))       dates       <- 1:T_obs
+  
+  export_list <- list()
+  counter <- 1
+  
+  for (v in 1:N_vars) {
+    for (t in 1:T_obs) {
+      row_data <- data.frame(
+        date            = dates[t],
+        target_variable = var_names[v]
+      )
+      
+      # Add column for each shock contribution
+      for (k in 1:N_shocks) {
+        s_name <- shock_names[k]
+        row_data[[paste0("shock_", s_name, "_mean")]] <- hd_matrix[v, k, t]
+      }
+      
+      # Add overall decomposed total
+      row_data$total_decomposed_mean <- sum(hd_matrix[v, , t])
+      
+      export_list[[counter]] <- row_data
+      counter <- counter + 1
+    }
+  }
+  
+  final_df <- do.call(rbind, export_list)
+  write.csv(final_df, file = file_path, row.names = FALSE)
+  
+  message("Successfully exported HD summary results to ", file_path)
+  return(final_df)
+}
+
+
 #============================================================================#
 #                     [4] FUNCTIONS FOR IRF
 #============================================================================#
@@ -481,4 +594,488 @@ plot_single_irf <- function(irf_df,
   }
   
   return(p)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+compute_hd_batched2 <- function(posterior_obj, horizon = NULL,
+                                batch_size = 1000,
+                                tmp_dir = "hd_batches_tmp") {
+ 
+  if (is.null(horizon)) horizon <- nrow(posterior_obj$specify$data)
+ 
+  irf_all   <- compute_impulse_responses(posterior_obj, horizon = horizon)
+  shock_all <- compute_structural_shocks(posterior_obj)
+ 
+  N     <- dim(irf_all)[1]
+  T_obs <- dim(shock_all)[2]
+  S     <- dim(irf_all)[4]
+ 
+  num_batches <- ceiling(S / batch_size)
+  cat(sprintf("Processing %d draws across %d batches...\n", S, num_batches))
+ 
+  if (!dir.exists(tmp_dir)) dir.create(tmp_dir)
+ 
+  hd_mean <- array(0, dim = c(N, N, T_obs))
+ 
+  for (b in 1:num_batches) {
+    idx_start <- (b - 1) * batch_size + 1
+    idx_end   <- min(b * batch_size, S)
+    batch_indices <- idx_start:idx_end
+    b_size <- length(batch_indices)
+ 
+    hd_batch <- array(0, dim = c(N, N, T_obs, b_size))
+ 
+    for (s_idx in 1:b_size) {
+      s <- batch_indices[s_idx]
+      for (t in 1:T_obs) {
+        for (j in 1:t) {
+          irf_mat    <- irf_all[, , j, s]
+          shock_diag <- diag(shock_all[, t - j + 1, s])
+          hd_batch[, , t, s_idx] <- hd_batch[, , t, s_idx] + (irf_mat %*% shock_diag)
+        }
+      }
+    }
+ 
+    # Accumulate running sum for the mean (cheap, in-memory)
+    hd_mean <- hd_mean + apply(hd_batch, c(1, 2, 3), sum)
+ 
+    # Save the batch itself to disk so quantiles can be computed
+    # after all batches are done, without holding everything in RAM
+    saveRDS(hd_batch, file = file.path(tmp_dir, sprintf("hd_batch_%03d.rds", b)))
+ 
+    rm(hd_batch)
+    gc(verbose = FALSE)
+    cat(sprintf("Batch %d/%d completed.\n", b, num_batches))
+  }
+ 
+  hd_mean <- hd_mean / S
+ 
+  # ---- Reload batches to compute quantiles ----
+  cat("Reloading batches to compute quantiles...\n")
+  batch_files <- file.path(tmp_dir, sprintf("hd_batch_%03d.rds", 1:num_batches))
+  hd_all <- do.call(abind::abind, c(lapply(batch_files, readRDS), along = 4))
+ 
+  hd_median <- apply(hd_all, c(1, 2, 3), median)
+  hd_lo90   <- apply(hd_all, c(1, 2, 3), quantile, probs = 0.05)
+  hd_hi90   <- apply(hd_all, c(1, 2, 3), quantile, probs = 0.95)
+  hd_lo68   <- apply(hd_all, c(1, 2, 3), quantile, probs = 0.16)
+  hd_hi68   <- apply(hd_all, c(1, 2, 3), quantile, probs = 0.84)
+ 
+  rm(hd_all)
+  gc(verbose = FALSE)
+  file.remove(batch_files)
+  unlink(tmp_dir, recursive = TRUE)
+ 
+  var_names <- colnames(posterior_obj$specify$data)
+  for (arr in list(hd_mean, hd_median, hd_lo90, hd_hi90, hd_lo68, hd_hi68)) {
+    dimnames(arr) <- list(Variable = var_names, Shock = var_names, Time = 1:T_obs)
+  }
+  dimnames(hd_mean)   <- list(Variable = var_names, Shock = var_names, Time = 1:T_obs)
+  dimnames(hd_median) <- list(Variable = var_names, Shock = var_names, Time = 1:T_obs)
+  dimnames(hd_lo90)   <- list(Variable = var_names, Shock = var_names, Time = 1:T_obs)
+  dimnames(hd_hi90)   <- list(Variable = var_names, Shock = var_names, Time = 1:T_obs)
+  dimnames(hd_lo68)   <- list(Variable = var_names, Shock = var_names, Time = 1:T_obs)
+  dimnames(hd_hi68)   <- list(Variable = var_names, Shock = var_names, Time = 1:T_obs)
+ 
+  return(list(
+    mean   = hd_mean,
+    median = hd_median,
+    lo90   = hd_lo90,
+    hi90   = hd_hi90,
+    lo68   = hd_lo68,
+    hi68   = hd_hi68
+  ))
+}
+ 
+ 
+## save_hd_batched_to_csv (updated)
+# Purpose: Exports mean + median + 90%/68% credible bands for the
+# historical decomposition to a single CSV, one row per
+# (target_variable, date), with columns per shock per statistic.
+ 
+save_hd_batched_to_csv <- function(hd_result, file_path = "hd_summary_results.csv",
+                                    dates = NULL) {
+ 
+  hd_mean   <- hd_result$mean
+  hd_median <- hd_result$median
+  hd_lo90   <- hd_result$lo90
+  hd_hi90   <- hd_result$hi90
+  hd_lo68   <- hd_result$lo68
+  hd_hi68   <- hd_result$hi68
+ 
+  N_vars   <- dim(hd_mean)[1]
+  N_shocks <- dim(hd_mean)[2]
+  T_obs    <- dim(hd_mean)[3]
+ 
+  var_names   <- dimnames(hd_mean)$Variable
+  shock_names <- dimnames(hd_mean)$Shock
+ 
+  if (is.null(var_names))   var_names   <- paste0("Var_", 1:N_vars)
+  if (is.null(shock_names)) shock_names <- paste0("Shock_", 1:N_shocks)
+  if (is.null(dates))       dates       <- 1:T_obs
+ 
+  export_list <- list()
+  counter <- 1
+ 
+  for (v in 1:N_vars) {
+    for (t in 1:T_obs) {
+      row_data <- data.frame(
+        date            = dates[t],
+        target_variable = var_names[v]
+      )
+ 
+      for (k in 1:N_shocks) {
+        s_name <- shock_names[k]
+        row_data[[paste0("shock_", s_name, "_mean")]]   <- hd_mean[v, k, t]
+        row_data[[paste0("shock_", s_name, "_median")]] <- hd_median[v, k, t]
+        row_data[[paste0("shock_", s_name, "_lo90")]]   <- hd_lo90[v, k, t]
+        row_data[[paste0("shock_", s_name, "_hi90")]]   <- hd_hi90[v, k, t]
+        row_data[[paste0("shock_", s_name, "_lo68")]]   <- hd_lo68[v, k, t]
+        row_data[[paste0("shock_", s_name, "_hi68")]]   <- hd_hi68[v, k, t]
+      }
+ 
+      row_data$total_decomposed_mean   <- sum(hd_mean[v, , t])
+      row_data$total_decomposed_median <- sum(hd_median[v, , t])
+ 
+      export_list[[counter]] <- row_data
+      counter <- counter + 1
+    }
+  }
+ 
+  final_df <- do.call(rbind, export_list)
+  write.csv(final_df, file = file_path, row.names = FALSE)
+ 
+  message("Successfully exported HD summary results to ", file_path)
+  return(final_df)
+}
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+compute_hd_bsvarSIGN <- function(posterior_obj, horizon = NULL, batch_size = 200, tmp_dir = "hd_tmp_bsvar") {
+  
+  # 1. Compute structural shocks first to automatically extract T_obs and N
+  cat("Extracting structural shocks and IRFs from posterior_obj...\n")
+  shock_all <- compute_structural_shocks(posterior_obj) # N x T_obs x S
+  
+  N     <- dim(shock_all)[1]
+  T_obs <- dim(shock_all)[2]
+  S     <- dim(shock_all)[3]
+  
+  # 2. Assign horizon cleanly
+  if (is.null(horizon) || length(horizon) == 0 || is.na(horizon)) {
+    horizon <- as.integer(T_obs)
+  } else {
+    horizon <- as.integer(horizon[1])
+  }
+  
+  # Extract IRFs using the verified single integer horizon
+  irf_all <- compute_impulse_responses(posterior_obj, horizon = horizon) # N x N x (horizon + 1) x S
+  
+  num_batches <- ceiling(S / batch_size)
+  
+  if (!dir.exists(tmp_dir)) dir.create(tmp_dir)
+  cat(sprintf("Processing %d draws across %d batches (N = %d, T = %d)...\n", S, num_batches, N, T_obs))
+  
+  hd_mean <- array(0, dim = c(N, N, T_obs))
+  
+  # 3. Batch Loop
+  for (b in 1:num_batches) {
+    idx_start <- (b - 1) * batch_size + 1
+    idx_end   <- min(b * batch_size, S)
+    batch_idx <- idx_start:idx_end
+    b_size    <- length(batch_idx)
+    
+    hd_batch <- array(0, dim = c(N, N, T_obs, b_size))
+    
+    for (s_local in 1:b_size) {
+      s_global <- batch_idx[s_local]
+      
+      for (t in 1:T_obs) {
+        max_h <- min(t - 1, horizon)
+        
+        for (h in 0:max_h) {
+          # IRF index h + 1 maps horizon 0 -> index 1
+          irf_mat   <- irf_all[, , h + 1, s_global] 
+          shock_vec <- shock_all[, t - h, s_global] 
+          
+          # Scale IRF matrix columns by structural shock vector
+          hd_batch[, , t, s_local] <- hd_batch[, , t, s_local] + sweep(irf_mat, 2, shock_vec, `*`)
+        }
+      }
+    }
+    
+    hd_mean <- hd_mean + apply(hd_batch, c(1, 2, 3), sum)
+    
+    saveRDS(hd_batch, file = file.path(tmp_dir, sprintf("hd_batch_%03d.rds", b)))
+    rm(hd_batch)
+    gc(verbose = FALSE)
+    cat(sprintf("Batch %d/%d cached to disk.\n", b, num_batches))
+  }
+  
+  hd_mean <- hd_mean / S
+  
+  # 4. Stream Quantiles
+  cat("Computing posterior quantiles across cached batches...\n")
+  hd_median <- hd_lo90 <- hd_hi90 <- hd_lo68 <- hd_hi68 <- array(0, dim = c(N, N, T_obs))
+  batch_files <- file.path(tmp_dir, sprintf("hd_batch_%03d.rds", 1:num_batches))
+  
+  for (v in 1:N) {
+    for (k in 1:N) {
+      for (t in 1:T_obs) {
+        draws_vkt <- numeric(S)
+        pos <- 1
+        
+        for (b in 1:num_batches) {
+          b_data <- readRDS(batch_files[b])
+          b_len  <- dim(b_data)[4]
+          draws_vkt[pos:(pos + b_len - 1)] <- b_data[v, k, t, ]
+          pos <- pos + b_len
+        }
+        
+        q <- quantile(draws_vkt, probs = c(0.05, 0.16, 0.50, 0.84, 0.95))
+        hd_lo90[v, k, t]   <- q[1]
+        hd_lo68[v, k, t]   <- q[2]
+        hd_median[v, k, t] <- q[3]
+        hd_hi68[v, k, t]   <- q[4]
+        hd_hi90[v, k, t]   <- q[5]
+      }
+    }
+  }
+  
+  unlink(tmp_dir, recursive = TRUE)
+  
+  # 5. Extract variable names dynamically from dimnames of shocks/IRFs
+  var_names <- dimnames(irf_all)[[1]]
+  if (is.null(var_names)) var_names <- paste0("Var_", 1:N)
+  
+  shock_names <- paste0("Shock_", var_names)
+  
+  dim_names <- list(Variable = var_names, Shock = shock_names, Time = 1:T_obs)
+  res <- list(
+    mean   = hd_mean, 
+    median = hd_median, 
+    lo90   = hd_lo90, 
+    hi90   = hd_hi90, 
+    lo68   = hd_lo68, 
+    hi68   = hd_hi68
+  )
+  
+  for (nm in names(res)) {
+    dimnames(res[[nm]]) <- dim_names
+  }
+  
+  return(res)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+compute_hd_bsvarSIGN <- function(posterior_obj, horizon = NULL, batch_size = 200, tmp_dir = "hd_tmp_bsvar") {
+  
+  # 1. Extract structural shocks to dynamically determine N, T_obs, and S
+  cat("Extracting structural shocks and IRFs from posterior_obj...\n")
+  shock_all <- compute_structural_shocks(posterior_obj) # N x T_obs x S
+  
+  N     <- dim(shock_all)[1]
+  T_obs <- dim(shock_all)[2]
+  S     <- dim(shock_all)[3]
+  
+  # 2. Assign horizon cleanly as a single integer
+  if (is.null(horizon) || length(horizon) == 0 || is.na(horizon)) {
+    horizon <- as.integer(T_obs)
+  } else {
+    horizon <- as.integer(horizon[1])
+  }
+  
+  # 3. Compute IRFs using the explicit scalar horizon
+  irf_all <- compute_impulse_responses(posterior_obj, horizon = horizon) # N x N x (horizon + 1) x S
+  
+  num_batches <- ceiling(S / batch_size)
+  
+  if (!dir.exists(tmp_dir)) dir.create(tmp_dir)
+  cat(sprintf("Processing %d draws across %d batches (N = %d, T = %d)...\n", S, num_batches, N, T_obs))
+  
+  hd_mean <- array(0, dim = c(N, N, T_obs))
+  
+  # 4. Batch Loop: Process and save to disk in chunks to save RAM
+  for (b in 1:num_batches) {
+    idx_start <- (b - 1) * batch_size + 1
+    idx_end   <- min(b * batch_size, S)
+    batch_idx <- idx_start:idx_end
+    b_size    <- length(batch_idx)
+    
+    hd_batch <- array(0, dim = c(N, N, T_obs, b_size))
+    
+    for (s_local in 1:b_size) {
+      s_global <- batch_idx[s_local]
+      
+      for (t in 1:T_obs) {
+        max_h <- min(t - 1, horizon)
+        
+        for (h in 0:max_h) {
+          # IRF index h + 1 maps horizon 0 -> index 1
+          irf_mat   <- irf_all[, , h + 1, s_global] 
+          shock_vec <- shock_all[, t - h, s_global] 
+          
+          # Vectorized column scaling: IRF[i, k, h] * Shock[k, t-h]
+          hd_batch[, , t, s_local] <- hd_batch[, , t, s_local] + sweep(irf_mat, 2, shock_vec, `*`)
+        }
+      }
+    }
+    
+    # Accumulate running total for posterior mean
+    hd_mean <- hd_mean + apply(hd_batch, c(1, 2, 3), sum)
+    
+    saveRDS(hd_batch, file = file.path(tmp_dir, sprintf("hd_batch_%03d.rds", b)))
+    rm(hd_batch)
+    gc(verbose = FALSE)
+    cat(sprintf("Batch %d/%d cached to disk.\n", b, num_batches))
+  }
+  
+  hd_mean <- hd_mean / S
+  
+  # 5. Fast Quantile Extraction Across Batches (Reads each batch file ONCE into memory)
+  cat("Extracting posterior quantiles...\n")
+  batch_files <- file.path(tmp_dir, sprintf("hd_batch_%03d.rds", 1:num_batches))
+  batch_list  <- lapply(batch_files, readRDS)
+  hd_all      <- abind::abind(batch_list, along = 4) # Combine into N x N x T x S
+  rm(batch_list)
+  gc(verbose = FALSE)
+
+  cat("Calculating median and credible intervals...\n")
+  hd_median <- apply(hd_all, c(1, 2, 3), median)
+  hd_lo90   <- apply(hd_all, c(1, 2, 3), quantile, probs = 0.05)
+  hd_hi90   <- apply(hd_all, c(1, 2, 3), quantile, probs = 0.95)
+  hd_lo68   <- apply(hd_all, c(1, 2, 3), quantile, probs = 0.16)
+  hd_hi68   <- apply(hd_all, c(1, 2, 3), quantile, probs = 0.84)
+  
+  rm(hd_all)
+  gc(verbose = FALSE)
+  
+  # Cleanup disk cache directory
+  unlink(tmp_dir, recursive = TRUE)
+  
+  # 6. Extract Variable Names and Format Dimensions
+  var_names <- dimnames(irf_all)[[1]]
+  if (is.null(var_names)) var_names <- paste0("Var_", 1:N)
+  
+  shock_names <- paste0("Shock_", var_names)
+  
+  dim_names <- list(Variable = var_names, Shock = shock_names, Time = 1:T_obs)
+  res <- list(
+    mean   = hd_mean, 
+    median = hd_median, 
+    lo90   = hd_lo90, 
+    hi90   = hd_hi90, 
+    lo68   = hd_lo68, 
+    hi68   = hd_hi68
+  )
+  
+  for (nm in names(res)) {
+    dimnames(res[[nm]]) <- dim_names
+  }
+  
+  return(res)
+}
+
+
+
+save_hd_batched_to_csv <- function(hd_results, file_path) {
+  
+  # Ensure target directory exists
+  dir_name <- dirname(file_path)
+  if (!dir.exists(dir_name)) dir.create(dir_name, recursive = TRUE)
+  
+  cat("Formatting historical decomposition data frame for CSV export...\n")
+  
+  # Extract dimensions and metadata
+  dim_names <- dimnames(hd_results$median)
+  var_names   <- dim_names$Variable
+  shock_names <- dim_names$Shock
+  T_obs       <- length(dim_names$Time)
+  
+  # Build long-format data frame via grid expansion
+  grid <- expand.grid(
+    Time     = 1:T_obs,
+    Shock    = shock_names,
+    Variable = var_names,
+    stringsAsFactors = FALSE
+  )
+  
+  # Flatten 3D arrays to vectors corresponding to the grid order
+  # Array indexing in R flattens as: Variable (fastest), Shock, Time (slowest)
+  # So we re-order the grid indices to match vector alignment exactly
+  idx_matrix <- cbind(
+    as.numeric(factor(grid$Variable, levels = var_names)),
+    as.numeric(factor(grid$Shock, levels = shock_names)),
+    grid$Time
+  )
+  
+  df_out <- data.frame(
+    Time     = grid$Time,
+    Variable = grid$Variable,
+    Shock    = grid$Shock,
+    Mean     = hd_results$mean[idx_matrix],
+    Median   = hd_results$median[idx_matrix],
+    Lo68     = hd_results$lo68[idx_matrix],
+    Hi68     = hd_results$hi68[idx_matrix],
+    Lo90     = hd_results$lo90[idx_matrix],
+    Hi90     = hd_results$hi90[idx_matrix],
+    stringsAsFactors = FALSE
+  )
+  
+  # Sort output cleanly by Variable, Shock, and Time
+  df_out <- df_out[order(df_out$Variable, df_out$Shock, df_out$Time), ]
+  
+  # Write to CSV
+  write.csv(df_out, file = file_path, row.names = FALSE)
+  cat(sprintf("Successfully exported historical decompositions to: %s\n", file_path))
 }
