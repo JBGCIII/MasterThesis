@@ -24,8 +24,6 @@ dir.create(
   showWarnings = FALSE
 )
 
-
-
 #============================================================================#
 #                              [1] Matrix Set Up
 #============================================================================#
@@ -81,8 +79,7 @@ sign_irf_policy <- array(
 )
 
 #How does the Swedish Economy react to a prolonged monetary policy contraciton?
-H_restrict_policy <- 6 # How long the restriction will apply (1.5 Years)
-# Why not 8? Mostly due to the lenght it takes to measures the model.
+H_restrict_policy <- 2 # How long the restriction will apply.
 
 # [Model 1] Monetary policy shock
 for (h in 1:H_restrict_policy) { # For all the entries in the matrices
@@ -95,8 +92,6 @@ for (h in 1:H_restrict_policy) { # For all the entries in the matrices
   sign_irf_policy[debt_idx, policy_idx, h] <-    -1 # Negative shock in debt
 }
 
-
-
 #============================================================================#
 #                              [3] Model Specs
 #============================================================================#
@@ -104,8 +99,11 @@ for (h in 1:H_restrict_policy) { # For all the entries in the matrices
 # bsvarSIGNs convention:
 #TRUE = Random Walk (Mean = 1)
 #FALSE = White Noise (Mean = 0)
-# See full set up instruction at:
-# https://bsvars.org/bsvarSIGNs/reference/specify_bsvarSIGN.html
+# [stationary] an N logical vector - its element set to FALSE sets the
+# prior mean for the autoregressive parameters of the Nth equation to
+# the white noise process, otherwise to random walk."
+# Source: https://bsvars.org/bsvarSIGNs/reference/specify_bsvarSIGN.html
+
 
 is_random_walk <- c(
   FALSE,  # gdp_growth 
@@ -138,33 +136,38 @@ spec_01 <- specify_bsvarSIGN$new(
   mc.cores     = n_cores
 )
 
-Sys.setenv(OMP_NUM_THREADS = n_cores)
-
-
 #============================================================================#
 #                              [4] Model Run
 #============================================================================#
 
 # Optimal hyperparameter starting points using Adaptive Metropolis
 set.seed(321)
-spec_01$estimate_hyper(S = 30000, burn_in = 10000)
+
+spec_01$estimate_hyper(S = 50000, burn_in = 20000)
 
 run_bsvar_sign_model_01 <- estimate(
   spec_01,
-  S = 20000,
+  S = 30000,
   thin = 5 # Reduces memory overhead and post-processing steps directly
 )
 
-# Run 01: 00:52 to 01:26.
+# Save Model: This I found was a good way to prevent me from rerunning things.
+# It also allowed to move models to other script, which is usefull for diagnostiscs
+# when comparing multiple models.
+saveRDS(
+  run_bsvar_sign_model_01,
+  "Analysis/BVAR_Sign/Model_01/run_bsvar_sign_model_30000.rds"
+)
 
+# Run 01 | Draws = 1000 | Start Time 21:39 | End Time 21:39.
+# Run 10 | Draws = 10000 | Start Time 17:52 | End Time 18:21
 
+run_bsvar_sign_model_01 <- readRDS("Analysis/BVAR_Sign/Model_01/run_bsvar_sign_model_30000.rds")
 
 #============================================================================#
 #                              [5] Model Diagnostics
 #============================================================================#
-
 # Trace Plot
-
 # Let's find Alpha and Lamba
 # str(spec$prior)
 #Row Index     Parameter    DescriptionRows
@@ -205,7 +208,6 @@ plot(run_bsvar_sign_model_01$posterior$hyper[10, ],
   col = "#000000")
 dev.off()
 
-
 #------------------------------------------------------------------------------#
 
 # ACF for Alpha
@@ -232,7 +234,6 @@ acf(run_bsvar_sign_model_01$posterior$hyper[10, ]
 , main = "ACF - Lambda")
 
 dev.off()
-
 
 
 
@@ -285,15 +286,9 @@ export_hyperparameters(
 #------------------------------------------------------------------------------#
 # Effective Sample Size
 
-# Create data frame in R
-ess_summary <- data.frame(
-  Parameter = c("Lambda", "Alpha"),
-  ESS       = c(round(ess_lambda, 1), round(ess_alpha, 1))
-)
-
-# Export to CSV
-write.csv(ess_summary, file = "Analysis/BVAR_Sign/Model_01/ESS_Diagnostics_Model_01.csv", row.names = FALSE)
-
+ess_results <- compute_and_export_ess(
+  model_obj = run_bsvar_sign_model_01,
+  file_path = "Analysis/BVAR_Sign/Model_01/ESS_Diagnostics_Model_01.csv")
 
 
 #============================================================================#
@@ -302,8 +297,10 @@ write.csv(ess_summary, file = "Analysis/BVAR_Sign/Model_01/ESS_Diagnostics_Model
 
 irf_updated <- compute_impulse_responses(
   run_bsvar_sign_model_01,
-  horizon = H_total
+  horizon = H_total,
+  standardise = TRUE # See Function about FEVD.
 )
+
 
 # Export IRF Results to CSV
 irf_df <- export_bvar_results_to_csv(
@@ -313,170 +310,95 @@ irf_df <- export_bvar_results_to_csv(
 )
 
 
-#------------------------------------------------------------------------------#
-# Policy Shock on Gdp Growth
-
-# 1. Extract IRF data frame
-df_gdp_policy <- get_irf_median_df(
-  irf_obj      = irf_updated, 
-  response_var = "gdp_growth", 
-  shock_var    = "policy_rate", 
-  label_name   = "Baseline Model",
-  target_cols  = target_cols
+# Run the plotting function
+irf_plot <- plot_bvar_irf(
+  csv_path = "Analysis/BVAR_Sign/Model_01/IRF_Summary_Results.csv",
+  shock_name = "policy_rate",
+  target_cols = target_cols
 )
+ggsave("Analysis/BVAR_Sign/Model_01/IRF/IRF_Policy_Shock.png", irf_plot, width = 10, height = 7)
 
-# 2. Render and save PNG
-plot_single_irf(
-  irf_df        = df_gdp_policy,
-  response_name = "GDP Growth",
-  shock_name    = "Monetary Policy Shock",
-  output_path   = "Analysis/BVAR_Sign/Model_01/IRF/IRF_Policy_on_GDP.png"
-)
 
-#------------------------------------------------------------------------------#
-# Policy Shock on Consumption Growth
 
-# 1. Extract IRF data frame
-df_consumption_policy <- get_irf_median_df(
-  irf_obj      = irf_updated, 
-  response_var = "consumption_growth", 
-  shock_var    = "policy_rate", 
-  label_name   = "Baseline Model",
-  target_cols  = target_cols
-)
-
-# 2. Render and save PNG
-plot_single_irf(
-  irf_df        = df_consumption_policy,
-  response_name = "Consumption Growth",
-  shock_name    = "Monetary Policy Shock",
-  output_path   = "Analysis/BVAR_Sign/Model_01/IRF/IRF_Policy_on_Consumption.png"
-)
-
-#------------------------------------------------------------------------------#
-# Policy Shock on Inflation
-
-# 1. Extract IRF data frame
-df_cpi_policy <- get_irf_median_df(
-  irf_obj      = irf_updated, 
-  response_var = "cpi_growth", 
-  shock_var    = "policy_rate", 
-  label_name   = "Baseline Model",
-  target_cols  = target_cols
-)
-
-# 2. Render and save PNG
-plot_single_irf(
-  irf_df        = df_cpi_policy,
-  response_name = "CPI",
-  shock_name    = "Monetary Policy Shock",
-  output_path   = "Analysis/BVAR_Sign/Model_01/IRF/IRF_Policy_on_CPI.png"
+fevd_30000 <- compute_fevd_bsvarSIGN_safe(
+  irf_30000_std
 )
 
 
-#------------------------------------------------------------------------------#
-# Policy Shock on Savings Rate
-
-# 1. Extract IRF data frame
-df_saving_policy <- get_irf_median_df(
-  irf_obj      = irf_updated, 
-  response_var = "saving_rate", 
-  shock_var    = "policy_rate", 
-  label_name   = "Baseline Model",
-  target_cols  = target_cols
+saveRDS(
+  fevd_30000,
+  "FEVD_30000_horizon30.rds"
 )
 
-# 2. Render and save PNG
-plot_single_irf(
-  irf_df        = df_saving_policy,
-  response_name = "Savings Rate",
-  shock_name    = "Monetary Policy Shock",
-  output_path   = "Analysis/BVAR_Sign/Model_01/IRF/IRF_Policy_on_Savings.png"
+var_names <- c(
+  "gdp_growth",
+  "consumption_growth",
+  "cpi_growth",
+  "saving_rate",
+  "policy_rate",
+  "interest_burden",
+  "debt_growth",
+  "real_house_price_growth",
+  "asset_liability_ratio"
 )
 
 
-#------------------------------------------------------------------------------#
-# Interest Burden
-
-# 1. Extract IRF data frame
-df_interest_policy <- get_irf_median_df(
-  irf_obj      = irf_updated, 
-  response_var = "interest_burden", 
-  shock_var    = "policy_rate", 
-  label_name   = "Baseline Model",
-  target_cols  = target_cols
-)
-
-# 2. Render and save PNG
-plot_single_irf(
-  irf_df        = df_interest_policy,
-  response_name = "Interest Burden",
-  shock_name    = "Monetary Policy Shock",
-  output_path   = "Analysis/BVAR_Sign/Model_01/IRF/IRF_Policy_on_Interest.png"
+shock_names <- c(
+  "gdp_growth",
+  "consumption_growth",
+  "cpi_growth",
+  "saving_rate",
+  "policy_rate",
+  "interest_burden",
+  "debt_growth",
+  "real_house_price_growth",
+  "asset_liability_ratio"
 )
 
 
-#------------------------------------------------------------------------------#
-# Policy Shock on Debt Growth
 
-# 1. Extract IRF data frame
-df_debt_policy <- get_irf_median_df(
-  irf_obj      = irf_updated, 
-  response_var = "debt_growth", 
-  shock_var    = "policy_rate", 
-  label_name   = "Baseline Model",
-  target_cols  = target_cols
-)
-
-# 2. Render and save PNG
-plot_single_irf(
-  irf_df        = df_debt_policy,
-  response_name = "Debt Growth",
-  shock_name    = "Monetary Policy Shock",
-  output_path   = "Analysis/BVAR_Sign/Model_01/IRF/IRF_Policy_on_Debt_Growth.png"
+plot_fevd_one_shock(
+  fevd = fevd_30000,
+  shock = 5,
+  var_names = var_names,
+  shock_names = shock_names
 )
 
 
-#------------------------------------------------------------------------------#
-# Policy Shock on House Price Growth
 
-# 1. Extract IRF data frame
-df_house_price_policy <- get_irf_median_df(
-  irf_obj      = irf_updated, 
-  response_var = "real_house_price_growth", 
-  shock_var    = "policy_rate", 
-  label_name   = "Baseline Model",
-  target_cols  = target_cols
+
+
+
+
+#============================================================================#
+#                         [5] Historical Decomposition
+#============================================================================#
+
+compute_hd_bsvarSIGN
+
+hd_results <- compute_hd_bsvarSIGN(
+  posterior_obj = run_bsvar_sign_model_01,
+  batch_size    = 200
 )
 
-# 2. Render and save PNG
-plot_single_irf(
-  irf_df        = df_house_price_policy,
-  response_name = "Real House Price Growth",
-  shock_name    = "Monetary Policy Shock",
-  output_path   = "Analysis/BVAR_Sign/Model_01/IRF/IRF_Policy_on_Real_House_Growth.png"
+save_hd_batched_to_csv(
+  hd_results = hd_results, 
+  file_path  = "Analysis/BVAR_Sign/Model_01/hd_summary_results.csv"
 )
 
 
-#------------------------------------------------------------------------------#
-# Policy Shock on Household's Wealth
+hd_draws <- compute_hd_batched(run_bsvar_sign_model_01)
 
-# 1. Extract IRF data frame
-df_wealth_policy <- get_irf_median_df(
-  irf_obj      = irf_updated, 
-  response_var = "asset_liability_ratio", 
-  shock_var    = "policy_rate", 
-  label_name   = "Baseline Model",
-  target_cols  = target_cols
+# Explicitly pass your dataset's row count as the horizon
+hd_draws <- compute_hd_batched(
+  posterior_obj = run_bsvar_sign_model_01, 
+  horizon       = nrow(bvar_matrix_policy_shock)
 )
 
-# 2. Render and save PNG
-plot_single_irf(
-  irf_df        = df_wealth_policy,
-  response_name = "Asset to Liability Ratio",
-  shock_name    = "Monetary Policy Shock",
-  output_path   = "Analysis/BVAR_Sign/Model_01/IRF/IRF_Policy_on_Wealth.png"
-)
+
+
+
+
 
 
 #============================================================================#
@@ -492,95 +414,3 @@ fevd_df <- export_bvar_results_to_csv(
   var_names  = target_cols,
   file_name  = "Analysis/BVAR_Sign/Model_01/FEVD_Summary_Results.csv"
 )
-
-
-fevd_data <- read.csv("Analysis/BVAR_Sign/Model_01/FEVD_Summary_Results.csv")
-
-
-library(tidyverse)
-
-library(tidyverse)
-
-# 1. Load data
-fevd_data <- read.csv("Analysis/BVAR_Sign/Model_01/FEVD_Summary_Results.csv")
-
-# 2. Reorder variables to match your macroeconomic model logical structure
-var_order <- c(
-  "gdp_growth", "consumption_growth", "cpi_growth",
-  "saving_rate", "policy_rate", "interest_burden",
-  "debt_growth", "real_house_price_growth", "asset_liability_ratio"
-)
-
-policy_data <- fevd_data %>%
-  filter(Shock == "policy_rate") %>%
-  mutate(Variable = factor(Variable, levels = var_order))
-
-# 3. Plot with clean X-axis breaks
-ggplot(policy_data, aes(x = Horizon)) +
-  geom_ribbon(aes(ymin = Lower_90, ymax = Upper_90), fill = "firebrick", alpha = 0.2) +
-  geom_ribbon(aes(ymin = Lower_68, ymax = Upper_68), fill = "firebrick", alpha = 0.4) +
-  geom_line(aes(y = Median), color = "darkred", linewidth = 0.8) +
-  geom_line(aes(y = Mean), color = "black", linetype = "dashed", linewidth = 0.5) +
-  facet_wrap(~ Variable, ncol = 3, scales = "free_y") +
-  # Format Y-axis percentages cleanly
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-  # Fix X-axis overlap by showing ticks every 4 periods (e.g., 1, 4, 8, 12, 16, 20)
-  scale_x_continuous(breaks = c(1, seq(4, max(policy_data$Horizon), by = 4))) +
-  labs(
-    title = "FEVD: Response of All 9 Variables to Policy Rate Shock",
-    subtitle = "68% and 90% Credible Intervals",
-    x = "Horizon (Quarters)",
-    y = "Variance Share",
-    caption = "Solid line: Median | Dashed line: Mean"
-  ) +
-  theme_minimal(base_size = 11) +
-  theme(
-    strip.text = element_text(face = "bold", size = 10),
-    panel.grid.minor = element_blank(),
-    axis.text.x = element_text(size = 9),
-    panel.spacing = unit(1, "lines") # Adds breathing room between facets
-  )
-
-
-
-
-
-
-
-
-
-
-
-# 1. Load data
-fevd_data <- read.csv("Analysis/BVAR_Sign/Model_01/FEVD_Summary_Results.csv")
-
-# 2. Compute normalized shares for GDP Growth
-gdp_fevd_normalized <- fevd_data %>%
-  filter(Variable == "gdp_growth") %>%
-  group_by(Horizon) %>%
-  # Normalize Median so all shocks sum to 1.0 (100%) per horizon
-  mutate(Normalized_Share = Median / sum(Median)) %>%
-  ungroup()
-
-# 3. Plot normalized stacked bar chart
-ggplot(gdp_fevd_normalized, aes(x = factor(Horizon), y = Normalized_Share, fill = Shock)) +
-  geom_col(width = 0.7, color = "white", linewidth = 0.2) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1), expand = c(0, 0)) +
-  scale_fill_brewer(palette = "Set3") +
-  labs(
-    title = "FEVD Breakdown: GDP Growth",
-    subtitle = "Normalized Variance Shares across Structural Shocks",
-    x = "Horizon (Quarters)",
-    y = "Share of Variance",
-    fill = "Structural Shock"
-  ) +
-  theme_minimal(base_size = 11) +
-  theme(
-    panel.grid.minor = element_blank(),
-    legend.position = "right"
-  )
-
-
-  fevd_data %>%
-  filter(Variable == "gdp_growth", Horizon == 1) %>%
-  select(Shock, Horizon, Mean, Median)
