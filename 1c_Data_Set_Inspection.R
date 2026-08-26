@@ -4,12 +4,12 @@
 # ==========================================0.Directory======================================#
 
 dir.create(
-  "Figures",
+  "2_Data_Inspection",
   showWarnings = FALSE
 )
 
 dir.create(
-  "Figures/Outliers",
+  "2_Data_Inspection/Outliers",
   showWarnings = FALSE
 )
 
@@ -51,9 +51,9 @@ Figure_1_Preliminary_Plot <- ggplot(
     y = ""
   )
 
-# 4. Save to the Figures folder
+# 4. Save to the 2_Data_Inspection folder
 ggsave(
-  filename = "Figures/Figure_1_Preliminary_Plot.png", 
+  filename = "2_Data_Inspection/Figure_1_Preliminary_Plot.png", 
   plot = Figure_1_Preliminary_Plot,
   width = 10, 
   height = 8, 
@@ -74,7 +74,7 @@ target_cols <- c(
 
 
 # 2. Ensure output directory exists
-dir.create("Figures/Outliers", recursive = TRUE, showWarnings = FALSE)
+dir.create("2_Data_Inspection/Outliers", recursive = TRUE, showWarnings = FALSE)
 
 # 3. Process all series in a single loop
 all_outliers_list <- lapply(target_cols, function(col_name) {
@@ -86,7 +86,7 @@ all_outliers_list <- lapply(target_cols, function(col_name) {
   outlier_fit <- suppressWarnings(tso(x_ts))
   
   # Save plot automatically with unique filename
-  png(paste0("Figures/Outliers/Figure_Outlier_", col_name, ".png"), 
+  png(paste0("2_Data_Inspection/Outliers/Figure_Outlier_", col_name, ".png"), 
       width = 10, height = 6, units = "in", res = 300)
   plot(outlier_fit)
   dev.off()
@@ -122,7 +122,7 @@ fit_saving     <- seas(saving_ts)
 saving_rate_sa <- final(fit_saving)
 
 # 3. Save diagnostic plot
-png("Figures/Figure_2_Seasonal_Adjustment_Savings_Rate.png", width = 10, height = 6, units = "in", res = 300)
+png("2_Data_Inspection/Figure_2_Seasonal_Adjustment_Savings_Rate.png", width = 10, height = 6, units = "in", res = 300)
 plot(fit_saving)
 dev.off()
 
