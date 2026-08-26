@@ -5,17 +5,17 @@
 # ==========================================0.Directory======================================#
 
 # 0. Setup Directories
-dir.create("Processed_Data/Data_Set_Columns", recursive = TRUE, showWarnings = FALSE)
+dir.create("1_Processed_Data/Data_Set_Columns", recursive = TRUE, showWarnings = FALSE)
 
 
 
-gdp <- read_csv("Raw_Data/1_SCB_gdp_growth_quarterly.csv")
-cons <- read_csv("Raw_Data/2_SCB_household_consumption_real_quarterly.csv")
-fa <- read_csv("Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv")
-sector <- read_csv("Raw_Data/3_SCB_household_sector_indicators.csv")
-cpi <- read_csv("Raw_Data/5_SCB_CPI_monthly.csv")
-hpi <- read_csv("Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv")
-repo <- read_csv("Raw_Data/7_Riksbank_policy_rate_daily.csv")
+gdp <- read_csv("0_Raw_Data/1_SCB_gdp_growth_quarterly.csv")
+cons <- read_csv("0_Raw_Data/2_SCB_household_consumption_real_quarterly.csv")
+fa <- read_csv("0_Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv")
+sector <- read_csv("0_Raw_Data/3_SCB_household_sector_indicators.csv")
+cpi <- read_csv("0_Raw_Data/5_SCB_CPI_monthly.csv")
+hpi <- read_csv("0_Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv")
+repo <- read_csv("0_Raw_Data/7_Riksbank_policy_rate_daily.csv")
 
 glimpse(gdp)
 glimpse(cons)
@@ -44,13 +44,13 @@ head(repo, 10)
 # ==============================================================================
 # 1. SCB Real Growth Rate (GDP & Consumption)
 # ==============================================================================
-gdp_growth_seasonal_adjust <- read_csv("Raw_Data/1_SCB_gdp_growth_quarterly.csv")
-consumption_growth_seasonal_adjust <- read_csv("Raw_Data/2_SCB_household_consumption_real_quarterly.csv")
+gdp_growth_seasonal_adjust <- read_csv("0_Raw_Data/1_SCB_gdp_growth_quarterly.csv")
+consumption_growth_seasonal_adjust <- read_csv("0_Raw_Data/2_SCB_household_consumption_real_quarterly.csv")
 
 # ==============================================================================
 # 3. Household Debt Growth ("Loans, total")
 # ==============================================================================
-fa <- read_csv("Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv")
+fa <- read_csv("0_Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv")
 
 household_debt <- fa %>%
   filter(
@@ -65,7 +65,7 @@ household_debt <- fa %>%
     debt_growth = 100 * (log(Balances) - lag(log(Balances)))
   )
 
-write_csv(household_debt, "Processed_Data/Data_Set_Columns/3b_household_debt.csv")
+write_csv(household_debt, "1_Processed_Data/Data_Set_Columns/3b_household_debt.csv")
 
 # ==============================================================================
 # 4. Asset-Liability Ratio (With 2001K1 Structural Break Fix)
@@ -98,12 +98,12 @@ financial_balance_sheet <- financial_assets %>%
   ) %>%
   dplyr::select(quarter, asset_liability_ratio)
 
-write_csv(financial_balance_sheet, "Processed_Data/Data_Set_Columns/4b_financial_asset_liability_ratio.csv")
+write_csv(financial_balance_sheet, "1_Processed_Data/Data_Set_Columns/4b_financial_asset_liability_ratio.csv")
 
 # ==============================================================================
 # 5. Household Financial Indicators
 # ==============================================================================
-sector <- read_csv("Raw_Data/3_SCB_household_sector_indicators.csv")
+sector <- read_csv("0_Raw_Data/3_SCB_household_sector_indicators.csv")
 
 household_indicators <- sector %>%
   rename(value = `Key indicators for income growth`) %>%
@@ -124,12 +124,12 @@ household_indicators <- sector %>%
     interest_burden = `Interest payments, gross, as a percentage of disposable income, net`
   )
 
-write_csv(household_indicators, "Processed_Data/Data_Set_Columns/5b_household_indicators.csv")
+write_csv(household_indicators, "1_Processed_Data/Data_Set_Columns/5b_household_indicators.csv")
 
 # ==============================================================================
 # 6. CPI Quarterly Inflation
 # ==============================================================================
-cpi <- read_csv("Raw_Data/5_SCB_CPI_monthly.csv")
+cpi <- read_csv("0_Raw_Data/5_SCB_CPI_monthly.csv")
 
 cpi_quarterly <- cpi %>%
   mutate(
@@ -147,12 +147,12 @@ cpi_quarterly <- cpi %>%
     cpi_growth = 100 * (log(cpi_index) - lag(log(cpi_index)))
   )
 
-write_csv(cpi_quarterly, "Processed_Data/Data_Set_Columns/6b_inflation_quarterly.csv")
+write_csv(cpi_quarterly, "1_Processed_Data/Data_Set_Columns/6b_inflation_quarterly.csv")
 
 # ==============================================================================
 # 7. Real House Price Growth
 # ==============================================================================
-hpi <- read_csv("Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv")
+hpi <- read_csv("0_Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv")
 
 # In case you were wondering about the similiarities between CPI and Growth.
 # The following dates.
@@ -171,12 +171,12 @@ real_house_prices <- hpi %>%
   ) %>%
   dplyr::select(quarter, real_house_price_growth)
 
-write_csv(real_house_prices, "Processed_Data/Data_Set_Columns/7b_real_house_price_growth.csv")
+write_csv(real_house_prices, "1_Processed_Data/Data_Set_Columns/7b_real_house_price_growth.csv")
 
 # ==============================================================================
 # 8. Riksbank Policy Rate
 # ==============================================================================
-repo_rate <- read_csv("Raw_Data/7_Riksbank_policy_rate_daily.csv")
+repo_rate <- read_csv("0_Raw_Data/7_Riksbank_policy_rate_daily.csv")
 
 policy_rate_quarterly <- repo_rate %>%
   mutate(
@@ -192,7 +192,7 @@ policy_rate_quarterly <- repo_rate %>%
   ) %>%
   arrange(quarter)
 
-write_csv(policy_rate_quarterly, "Processed_Data/Data_Set_Columns/8b_policy_rate_quarterly.csv")
+write_csv(policy_rate_quarterly, "1_Processed_Data/Data_Set_Columns/8b_policy_rate_quarterly.csv")
 
 
 # ==============================================================================
@@ -215,4 +215,4 @@ macro_households <- list(
   filter(complete.cases(.))
 
 # Save master dataset
-write_csv(macro_households, "Processed_Data/1c_final_data.csv")
+write_csv(macro_households, "1_Processed_Data/1c_final_data.csv")

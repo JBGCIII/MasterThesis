@@ -29,7 +29,7 @@ dir.create("Analysis/BVAR_Sign/Model_04", showWarnings = FALSE)
 
 # Load Seasonally and Outlier Adjusted Data.
 bvar_data <- read.csv(
-  "Processed_Data/1e_final_data_seasonal_outliers_adjusted.csv"
+  "1_Processed_Data/1e_final_data_seasonal_outliers_adjusted.csv"
 )
 
 # Column of interest. Note how Debt to Income is left out.

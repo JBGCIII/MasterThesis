@@ -6,7 +6,7 @@
 # ==========================================0.Directory=======================================#
 
 dir.create(
-  "Raw_Data",
+  "0_Raw_Data",
   showWarnings = FALSE
 )
 
@@ -51,7 +51,7 @@ gdp_sa <- gdp_sa %>%
 
 write_csv(
   gdp_sa,
-  "Raw_Data/1_SCB_gdp_growth_quarterly.csv"
+  "0_Raw_Data/1_SCB_gdp_growth_quarterly.csv"
 )
 
 
@@ -77,7 +77,7 @@ consumption_growth <- consumption_growth %>%
 
 write_csv(
   consumption_growth,
-  "Raw_Data/2_SCB_household_consumption_real_quarterly.csv"
+  "0_Raw_Data/2_SCB_household_consumption_real_quarterly.csv"
 )
 
 
@@ -103,7 +103,7 @@ sector_indicators <- download_pxweb(
 
 write_csv(
   sector_indicators,
-  "Raw_Data/3_SCB_household_sector_indicators.csv"
+  "0_Raw_Data/3_SCB_household_sector_indicators.csv"
 )
 
 
@@ -129,7 +129,7 @@ household_financial_accounts_raw <- download_pxweb(
 
 write_csv(
   household_financial_accounts_raw,
-  "Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv"
+  "0_Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv"
 )
 
 
@@ -151,7 +151,7 @@ cpi <- download_pxweb(
 
 write_csv(
   cpi,
-  "Raw_Data/5_SCB_CPI_monthly.csv"
+  "0_Raw_Data/5_SCB_CPI_monthly.csv"
 )
 
 
@@ -173,7 +173,7 @@ hpi_all <- download_pxweb(
 
 write_csv(
   hpi_all,
-  "Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv"
+  "0_Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv"
 )
 
 
@@ -186,9 +186,9 @@ repo_rate <- get_riksbank_series("SECBREPOEFF")
 #lending_rate <- get_riksbank_series("SECBLENDEFF")
 #reference_rate <- get_riksbank_series("SECBREFEFF")
 
-write_csv(repo_rate,"Raw_Data/7_Riksbank_policy_rate_daily.csv")
-#write_csv(deposit_rate,"Raw_Data/8_Riksbank_deposit_rate_daily.csv")
-#write_csv(lending_rate,"Raw_Data/9_Riksbank_lending_rate_daily.csv")
-#write_csv(reference_rate,"Raw_Data/10_Riksbank_reference_rate_daily.csv")
+write_csv(repo_rate,"0_Raw_Data/7_Riksbank_policy_rate_daily.csv")
+#write_csv(deposit_rate,"0_Raw_Data/8_Riksbank_deposit_rate_daily.csv")
+#write_csv(lending_rate,"0_Raw_Data/9_Riksbank_lending_rate_daily.csv")
+#write_csv(reference_rate,"0_Raw_Data/10_Riksbank_reference_rate_daily.csv")
 
 

@@ -13,7 +13,7 @@ dir.create(
   showWarnings = FALSE
 )
 
-macro_data_inspection <- read_csv("Processed_Data/1c_final_data.csv")
+macro_data_inspection <- read_csv("1_Processed_Data/1c_final_data.csv")
 
 # ====================================1.Preliminary Analysis====================================#
 
@@ -135,5 +135,5 @@ macro_data <- macro_data_inspection %>%
 # 5. Export processed data
 write_csv(
   macro_data,
-  "Processed_Data/1e_final_data_seasonal_outliers_adjusted.csv"
+  "1_Processed_Data/1e_final_data_seasonal_outliers_adjusted.csv"
 )

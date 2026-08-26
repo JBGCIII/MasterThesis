@@ -6,12 +6,12 @@
 
 
 dir.create(
-  "Processed_Data",
+  "1_Processed_Data",
   showWarnings = FALSE
 )
 
 dir.create(
-  "Processed_Data/Data_Set_Columns",
+  "1_Processed_Data/Data_Set_Columns",
   showWarnings = FALSE
 )
 
@@ -21,8 +21,8 @@ dir.create(
 #                   1_SCB_Real_Growth_Rate (GDP & Consumption) Seasonal_Adjusted            #
 
 # Load GDP and Consumption Growth (Already Transformed by SCB. No need to process)
-gdp_growth_seasonal_adjust <- read_csv("Raw_Data/1_SCB_gdp_growth_quarterly.csv")
-consumption_growth_seasonal_adjust <- read_csv("Raw_Data/2_SCB_household_consumption_real_quarterly.csv"
+gdp_growth_seasonal_adjust <- read_csv("0_Raw_Data/1_SCB_gdp_growth_quarterly.csv")
+consumption_growth_seasonal_adjust <- read_csv("0_Raw_Data/2_SCB_household_consumption_real_quarterly.csv"
 )
 
 
@@ -39,7 +39,7 @@ consumption_growth_seasonal_adjust <- read_csv("Raw_Data/2_SCB_household_consump
 
 
 fa <- read_csv(
-  "Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv"
+  "0_Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv"
 )
 
 # Extract household liabilities
@@ -64,14 +64,14 @@ household_debt <- household_debt %>%
 
 write_csv(
   household_debt,
-  "Processed_Data/Data_Set_Columns/b3b_household_debt.csv"
+  "1_Processed_Data/Data_Set_Columns/b3b_household_debt.csv"
 )
 
 
 
 library(tidyverse)
 
-fa <- read_csv("Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv")
+fa <- read_csv("0_Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv")
 
 # 1. Extract raw series
 household_debt <- fa %>%
@@ -108,7 +108,7 @@ financial_balance_sheet <- financial_assets %>%
 # Save output
 write_csv(
   financial_balance_sheet,
-  "Processed_Data/Data_Set_Columns/b4b_financial_asset_liability_ratio.csv"
+  "1_Processed_Data/Data_Set_Columns/b4b_financial_asset_liability_ratio.csv"
 )
 
 
@@ -117,7 +117,7 @@ write_csv(
 
 
 sector <- read_csv(
-  "Raw_Data/3_SCB_household_sector_indicators.csv"
+  "0_Raw_Data/3_SCB_household_sector_indicators.csv"
 )
 
 household_indicators <- sector %>%
@@ -149,7 +149,7 @@ household_indicators <- sector %>%
 
   write_csv(
   household_indicators,
-  "Processed_Data/Data_Set_Columns/5b_household_indicators.csv"
+  "1_Processed_Data/Data_Set_Columns/5b_household_indicators.csv"
 )
 
 
@@ -158,7 +158,7 @@ household_indicators <- sector %>%
 #                                  6_CPI quarterly inflation                                                
 
 cpi <- read_csv(
-  "Raw_Data/5_SCB_CPI_monthly.csv"
+  "0_Raw_Data/5_SCB_CPI_monthly.csv"
 )
 
 cpi_quarterly <- cpi %>%
@@ -192,7 +192,7 @@ cpi_quarterly <- cpi_quarterly %>%
 
 write_csv(
   cpi_quarterly,
-  "Processed_Data/Data_Set_Columns/6b_inflation_quarterly.csv"
+  "1_Processed_Data/Data_Set_Columns/6b_inflation_quarterly.csv"
 )
 
 
@@ -200,7 +200,7 @@ write_csv(
 #                                  7_real_house_price_growth                                               
 
 hpi <- read_csv(
-  "Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv"
+  "0_Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv"
 )
 
 # Keep Sweden only
@@ -239,7 +239,7 @@ real_house_prices <- hpi_sweden %>%
 
 write_csv(
   real_house_prices,
-  "Processed_Data/Data_Set_Columns/7b_real_house_price_growth.csv"
+  "1_Processed_Data/Data_Set_Columns/7b_real_house_price_growth.csv"
 )
 
 
@@ -249,7 +249,7 @@ write_csv(
 
 
 repo_rate <- read_csv(
-  "Raw_Data/7_Riksbank_policy_rate_daily.csv"
+  "0_Raw_Data/7_Riksbank_policy_rate_daily.csv"
 )
 
 policy_rate_quarterly <- repo_rate %>%
@@ -273,7 +273,7 @@ policy_rate_quarterly <- repo_rate %>%
 
 write_csv(
   policy_rate_quarterly,
-  "Processed_Data/Data_Set_Columns/8b_policy_rate_quarterly.csv"
+  "1_Processed_Data/Data_Set_Columns/8b_policy_rate_quarterly.csv"
 )
 
 
@@ -337,7 +337,7 @@ macro_households <-
 
 write_csv(
   macro_households,
-  "Processed_Data/1c_final_data.csv"
+  "1_Processed_Data/1c_final_data.csv"
 )
 
 
