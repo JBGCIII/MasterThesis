@@ -9,17 +9,17 @@
 
 #------------------------------------------------------------------------------#
 
-# Main folder for analysis
-dir.create("Analysis", showWarnings = FALSE)
+# Main folder for 3_Analysis
+dir.create("3_Analysis", showWarnings = FALSE)
 
 # Sub-folder for BVAR Sign.
-dir.create("Analysis/BVAR_Sign", showWarnings = FALSE)
+dir.create("3_Analysis/BVAR_Sign", showWarnings = FALSE)
 
 # Sub-folder for Each Model
-dir.create("Analysis/BVAR_Sign/Model_01", showWarnings = FALSE) # Policy
-dir.create("Analysis/BVAR_Sign/Model_02", showWarnings = FALSE)
-dir.create("Analysis/BVAR_Sign/Model_03", showWarnings = FALSE)
-dir.create("Analysis/BVAR_Sign/Model_04", showWarnings = FALSE)
+dir.create("3_Analysis/BVAR_Sign/Model_01", showWarnings = FALSE) # Policy
+dir.create("3_Analysis/BVAR_Sign/Model_02", showWarnings = FALSE)
+dir.create("3_Analysis/BVAR_Sign/Model_03", showWarnings = FALSE)
+dir.create("3_Analysis/BVAR_Sign/Model_04", showWarnings = FALSE)
 
 
 
@@ -277,7 +277,7 @@ run_bsvar_sign_model_01 <- estimate(
 
 saveRDS(
   run_bsvar_sign_model_01,
-  "Analysis/BVAR_Sign/Model_01/run_bsvar_sign_model_1_20000.rds"
+  "3_Analysis/BVAR_Sign/Model_01/run_bsvar_sign_model_1_20000.rds"
 )
 
 rm(run_bsvar_sign_model_01)
@@ -293,7 +293,7 @@ run_bsvar_sign_model_02 <- estimate(
 
 saveRDS(
   run_bsvar_sign_model_02,
-  "Analysis/BVAR_Sign/Model_02/run_bsvar_sign_model_2_20000.rds"
+  "3_Analysis/BVAR_Sign/Model_02/run_bsvar_sign_model_2_20000.rds"
 )
 
 rm(run_bsvar_sign_model_02)
@@ -309,7 +309,7 @@ run_bsvar_sign_model_03 <- estimate(
 
 saveRDS(
   run_bsvar_sign_model_03,
-  "Analysis/BVAR_Sign/Model_03/run_bsvar_sign_model_3_20000.rds"
+  "3_Analysis/BVAR_Sign/Model_03/run_bsvar_sign_model_3_20000.rds"
 )
 
 rm(run_bsvar_sign_model_03)
@@ -324,7 +324,7 @@ run_bsvar_sign_model_04 <- estimate(
 
 saveRDS(
   run_bsvar_sign_model_04,
-  "Analysis/BVAR_Sign/Model_04/run_bsvar_sign_model_4_20000.rds"
+  "3_Analysis/BVAR_Sign/Model_04/run_bsvar_sign_model_4_20000.rds"
 )
 
 rm(run_bsvar_sign_model_04)

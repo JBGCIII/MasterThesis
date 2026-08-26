@@ -62,9 +62,6 @@ ggsave(
 
 # ====================================2.Outliers=======================================#
 
-library(tsoutliers)
-library(dplyr)
-
 # 1. Define target series
 target_cols <- c(
   "gdp_growth", "consumption_growth", "debt_growth", 
