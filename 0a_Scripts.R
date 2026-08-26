@@ -57,3 +57,11 @@ shell.exec(.libPaths()[1])
 package_version("bsvars")
 
 packageVersion("bsvars")
+
+
+library(jsonlite)
+library(rlang)
+
+
+
+install.packages(c("jsonlite", "rlang"))
