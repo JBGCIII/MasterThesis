@@ -46,7 +46,9 @@
 # Or RAM usage. You might have access to a supercomputer or not. A program
 # should run no matter the machine.
 # [P.S. One of the great things I learned troug this is that you can save the
-# model and don't need to re-run it. Which is great.]
+# model and don't need to re-run it. Which is great. The same as with IRFs
+# which led me to adapt a modular approach to the different models instead 
+# of plotting each one separately.]
 
 
 compute_fevd_bsvarSIGN_safe <- function(irf_obj) {
@@ -314,14 +316,9 @@ plot_fevd <- function(
 }
 
 
-
-
-
-
-
-
-
-
+# ============================================================
+# FEVD PLOT FUNCTION
+# ============================================================
 
 plot_fevd_one_shock <- function(
     fevd,
