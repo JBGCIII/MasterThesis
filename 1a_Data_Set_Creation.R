@@ -1,21 +1,13 @@
+###############################################################################
+############################# 1.a DATA_SET_CREATION ###########################
+###############################################################################
 
-#####################################1.DATA_SET_CREATION######################################
-##                                                                                           #
+dir.create( "0_Raw_Data", showWarnings = FALSE) # Create Directory
+# Reminder to myself to change all Raw_Data to 0_Raw_Data at once.
 
-
-# ==========================================0.Directory=======================================#
-
-dir.create(
-  "0_Raw_Data",
-  showWarnings = FALSE
-)
-
-##############################################################################################
-
-
-# ==========================================================================================#
-#                            1_SCB_gdp_expenditures_real_quarterly                          #
-
+#============================================================================#
+#                            1_SCB_gdp_expenditures_real_quarterly  
+#============================================================================#
 #Note you can explore the SCB API by the following
 #pxweb_get(
 #  "https://api.scb.se/OV0104/v1/doris/en/ssd/NR/NR0103/NR0103C"
@@ -55,9 +47,10 @@ write_csv(
 )
 
 
-# ==========================================================================================#
-#                            2_SCB_household_consumption_real_quarterly                      
 
+#============================================================================#
+#                       2_SCB_household_consumption_real_quarterly   
+#============================================================================#
 
 consumption_growth <- download_pxweb(
   url_gdp_sa,
@@ -82,9 +75,9 @@ write_csv(
 
 
 
-
-# ==========================================================================================#
-#                            3_SCB_household_sector_indicators                     
+#============================================================================#
+#                      3_SCB_household_sector_indicators   
+#============================================================================#
 
 url_sector_indicators <- paste0(
   "https://api.scb.se/OV0104/v1/doris/en/ssd/",
@@ -97,7 +90,7 @@ sector_indicators <- download_pxweb(
     Sektor = "*",
     NRindikator = "*",
     ContentsCode = "000000ZF",
-    Tid = "*" # Available back to 1980K1
+    Tid = "*" # Available as far back as 1980K1
   )
 )
 
@@ -107,10 +100,9 @@ write_csv(
 )
 
 
-
-# ==========================================================================================#
-#                            4_SCB_household_financial_accounts_full_quarterly                  
-
+#============================================================================#
+#                  4_SCB_household_financial_accounts_full_quarterly 
+#============================================================================#
 
 url_fa_esa2010_quarterly <- paste0(
   "https://api.scb.se/OV0104/v1/doris/en/ssd/",
@@ -123,8 +115,8 @@ household_financial_accounts_raw <- download_pxweb(
     Sektor = "S14",
     Kontopost = "*",
     ContentsCode = "FM0103AS",
-    Tid = "*" # Available back to 1996K1
-  )
+    Tid = "*" # Available as back as 1996K1 
+  )           # Kind of sad that this means losing more than 10 years of data
 )
 
 write_csv(
@@ -133,9 +125,11 @@ write_csv(
 )
 
 
-# ==========================================================================================#
-#                                       5_SCB_CPI_monthly                
 
+#============================================================================#
+#                                    5_SCB_CPI_monthly   
+#============================================================================#
+                                          
 url_cpi <- paste0(
   "https://api.scb.se/OV0104/v1/doris/en/ssd/",
   "PR/PR0101/PR0101A/KPItotM"
@@ -151,14 +145,14 @@ cpi <- download_pxweb(
 
 write_csv(
   cpi,
-  "0_Raw_Data/5_SCB_CPI_monthly.csv"
+  "0_Raw_Data/5_SCB_CPI_monthly.csv" # Will have to be adjusted to quarterly.
 )
 
 
-
-# ==========================================================================================#
-#                                       6_SCB_house_price_index_quarterly_all_regions              
-
+#============================================================================#
+#                       6_SCB_house_price_index_quarterly_all_regions 
+#============================================================================#
+                                          
 url_hpi_quarterly <- 
   "https://api.scb.se/OV0104/v1/doris/en/ssd/BO/BO0501/BO0501A/FastpiPSRegKv"
 
@@ -167,7 +161,7 @@ hpi_all <- download_pxweb(
   list(
     Region = "*",
     ContentsCode = "BO0501K2",
-    Tid = "*" #Available back to 1986K1
+    Tid = "*" #Available back to 1986K1 (Index Based)
   )
 )
 
@@ -177,18 +171,31 @@ write_csv(
 )
 
 
-# ==========================================================================================#
-#                                       7_Riksbank interest rates            
-
+#============================================================================#
+#                        7_Riksbank interest rates 
+#============================================================================#
 
 repo_rate <- get_riksbank_series("SECBREPOEFF")
+write_csv(repo_rate,"0_Raw_Data/7_Riksbank_policy_rate_daily.csv")
+# Daily rate, will have to be adjusted.
+
+#------------------------------------------------------------------------------#
+# Other interesting rates in case necessary.
+
 #deposit_rate <- get_riksbank_series("SECBDEPOEFF")
 #lending_rate <- get_riksbank_series("SECBLENDEFF")
 #reference_rate <- get_riksbank_series("SECBREFEFF")
-
-write_csv(repo_rate,"0_Raw_Data/7_Riksbank_policy_rate_daily.csv")
 #write_csv(deposit_rate,"0_Raw_Data/8_Riksbank_deposit_rate_daily.csv")
 #write_csv(lending_rate,"0_Raw_Data/9_Riksbank_lending_rate_daily.csv")
 #write_csv(reference_rate,"0_Raw_Data/10_Riksbank_reference_rate_daily.csv")
 
 
+#============================================================================#
+#                        8_KIX_Exchange_Rate_Index
+#============================================================================#
+
+repo_rate <- get_riksbank_series("SEKKIX92")
+write_csv(repo_rate,"0_Raw_Data/8_KIX_Exchange_Rate_Index.csv")
+# Effective exchange rate index - KIX and TCW
+# The exchange rate index weights together different bilateral exchange rates 
+# to create an effective (or average) exchange rate.
