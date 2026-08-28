@@ -2,6 +2,23 @@
 ########################### 2. MODELS DIAGNOSTIC  #############################
 ###############################################################################
 
+
+#============================================================================#
+#                              [5] Model Diagnostics
+#============================================================================#
+# Trace Plot
+# Let's find Alpha and Lamba
+# str(spec$prior)
+#Row Index     Parameter    DescriptionRows
+#1 to 3$       mu (1-3)     Minnesota prior shrinkage parameters for means.
+#Rows 4 to 6   delta (1-3)  Persistence / autoregressive shrinkage parameters.
+#Rows 7 to 9   psi(1-3)     Scale parameters for individual equations.
+#Row 10$       lambda       Overall Minnesota prior tightness hyperparameter.
+#Row 11$       alpha        Lag decay hyperparameter.
+#Rows 12 to 16 Additional   Dummy observation weights.
+
+#------------------------------------------------------------------------------#
+
 # Let's find Alpha and Lamba
 # str(spec$prior)
 #Row Index     Parameter    DescriptionRows
