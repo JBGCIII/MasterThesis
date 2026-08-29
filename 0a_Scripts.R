@@ -1,67 +1,65 @@
 ###############################################################################
-###############################0.SCRIPT INSTALATION############################
+############################    0.SCRIPT INSTALATION   ########################
 ###############################################################################
 
-needed_pkgs <- c("tidyverse", "pxweb", "httr", "jsonlite", "zoo", "seasonal", "urca", "dynlm"
-,"xts", "tsoutliers", "forecast" , "coda", "stats", "future")
+# List of required packages
+needed_pkgs <- c(
+  # Data Gathering
+  "pxweb",      # API data extraction (SCB)
+  "httr",       # HTTP requests
+  "jsonlite",   # Parsing JSON payloads
+  #============================================================================#
+  # Core Data Processing & Visualization
+  "tidyverse",  # Loads dplyr, readr, tidyr, purrr, ggplot2, etc.
+  "psych",      # Descriptive statistics
+  "zoo",        # Infrastructure for regular/irregular time series
+  "xts",        # Extensible time series (used over base ts to facilitate date splitting in ADF tests)
+  
+  #============================================================================#
+  # Econometric & Time Series Analysis
+  "seastests",  # Simple seasonality testing tools
+  "seasonal",   # Seasonal adjustment (X-13ARIMA-SEATS)
+  "tsoutliers", # Helps identifying outliers in the dataset
+  "urca",       # Analysis of integrated and cointegrated time series
+  "dynlm",      # Dynamic linear regression
+  "forecast",   # Forecasting functions for time series and linear models
+  
+  #============================================================================#
+  # Bayesian Models & SVAR
+  "coda",       # Used for formal MCMC convergence diagnostics
+  "stats",      # Statistical calculations & random number generation
+  "future",     # Parallel and distributed processing
+  "abind",      # Combine multidimensional arrays
+  "bsvars",     # Bayesian estimation of structural vector autoregressive models
+  "bsvarSIGNs", # Add-on for BSVAR identified by sign, zero, and narrative restrictions
+  "rlang"       # Core language features and metaprogramming
+)
+
+#============================================================================#
+# Install any missing packages automatically
 missing_pkgs <- needed_pkgs[!(needed_pkgs %in% installed.packages()[, "Package"])]
-if (length(missing_pkgs) > 0) install.packages(missing_pkgs)
+if (length(missing_pkgs) > 0) {
+  install.packages(missing_pkgs)
+}
+
+# Load all packages quietly
+suppressPackageStartupMessages(
+  lapply(needed_pkgs, library, character.only = TRUE)
+)
 
 #============================================================================#
-# Data Gathering
-library(pxweb)     # API data extraction (SCB)
-library(httr)      # HTTP requests
-library(jsonlite)  # Parsing JSON payloads
 
-#============================================================================#
-# Core Data Processing & Visualization (Loads dplyr, readr, tidyr, purrr, ggplot2)
-library(tidyverse) 
-
-#============================================================================#
-# Econometric & Time Series Analysis
-library(zoo)       # Infrastructure for regular/irregular time series
-library(seasonal)  # Seasonal adjustment (X-13ARIMA-SEATS)
-library(urca)  # Analysis of Integrated and Cointegrated Time Series
-library(dynlm)  # Dynamic Linear Regression
-library(xts) # Exstensible Time Series (I would have used build in Ts if not 
-             #for having to split dates in ADF test)
-library(tsoutliers)
-library(forecast)
-
-#============================================================================#
-library(coda) # Used for formal MCMC convergence diagnostics
-library(stats)
-library(future)
-
-# Bvar with sign restrictions.
-# Note: The package needs to be downloaded directly from Github.
+# Note: The package for BSVAR and BSVARSIGN on github is often more up 
+# to date and was originally installed as such. 
+#remotes::install_github("bsvars/bsvarSIGNs", upgrade = "never")
 #remotes::install_github("bsvars/bsvarSIGNs", upgrade = "never")
 
-#remotes::install_github("bsvars/bsvarSIGNs", upgrade = "never")
+# However the version used for the thesis (3.0  and 4.0) are now available on CRAN
+# Do make sure your are up to date as well!
+# available.packages()["bsvars", "Version"]
+# available.packages()["bsvarSIGNs", "Version"]
 
-library(abind)
-library(bsvars) #Bayesian Estimation of Structural Vector Autoregressive Models
-library(bsvarSIGNs) # Add-on package Bayesian Estimation of Structural Vector 
-# Autoregressions Identified by Sign, Zero, and Narrative Restrictions
-
-
-version(bsvars)
-version(bsvarSIGNs)
-
-
-.libPaths()
-
-
-
-shell.exec(.libPaths()[1])
-package_version("bsvars")
-
-packageVersion("bsvars")
-
-
-library(jsonlite)
-library(rlang)
-
-
-
-install.packages(c("jsonlite", "rlang"))
+# Check installed version
+# packageVersion("bsvars")
+# packageVersion("bsvarSIGNs")
+#============================================================================#
