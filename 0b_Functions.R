@@ -39,6 +39,27 @@ download_pxweb <- function(url, query){
   )
 }
 
+
+
+
+## (1) download_pxweb
+# Purpose: SCB PXWEB downloader, defaulting to text to match existing scripts
+# while allowing code-based queries when required by specific SCB tables.
+
+download_pxweb_text <- function(url, query, 
+                           col_type = "text", 
+                           val_type = "text"){
+
+  pxq <- pxweb_query(query)
+  
+  pxweb_get_data(
+    url = url,
+    query = pxq,
+    column.name.type = col_type,
+    variable.value.type = val_type
+  )
+}
+
 #------------------------------------------------------------------------------#
 
 ## (2) get_riksbank_series

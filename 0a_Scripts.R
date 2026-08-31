@@ -35,6 +35,8 @@ needed_pkgs <- c(
   "rlang"       # Core language features and metaprogramming
 )
 
+# Package citated using the function
+# citation("package_name_here")
 #============================================================================#
 # Install any missing packages automatically
 missing_pkgs <- needed_pkgs[!(needed_pkgs %in% installed.packages()[, "Package"])]
@@ -63,3 +65,20 @@ suppressPackageStartupMessages(
 # packageVersion("bsvars")
 # packageVersion("bsvarSIGNs")
 #============================================================================#
+
+
+
+
+install.packages("tempdisagg")
+# Load tempdisagg and zoo (useful for handling date objects)
+library(tempdisagg)
+library(zoo)
+
+
+
+if (!require("rjson")) install.packages("rjson")
+
+
+library(rsdmx)
+library(dplyr)
+library(readr)
