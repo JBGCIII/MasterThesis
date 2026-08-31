@@ -159,7 +159,8 @@ Sweden,2025K1,939
 Sweden,2025K2,946
 Sweden,2025K3,952
 Sweden,2025K4,941
-Sweden,2026K1,951
+Sweden,2026K1,948
+Sweden,2026K2,965
 Greater Stockholm,1986K1,116
 Greater Stockholm,1986K2,117
 Greater Stockholm,1986K3,123
@@ -321,6 +322,7 @@ Greater Stockholm,2025K2,1278
 Greater Stockholm,2025K3,1266
 Greater Stockholm,2025K4,1254
 Greater Stockholm,2026K1,1260
+Greater Stockholm,2026K2,1311
 Greater Gothenburg,1986K1,122
 Greater Gothenburg,1986K2,125
 Greater Gothenburg,1986K3,129
@@ -481,7 +483,8 @@ Greater Gothenburg,2025K1,1226
 Greater Gothenburg,2025K2,1216
 Greater Gothenburg,2025K3,1218
 Greater Gothenburg,2025K4,1241
-Greater Gothenburg,2026K1,1199
+Greater Gothenburg,2026K1,1192
+Greater Gothenburg,2026K2,1193
 Greater Malmö,1986K1,110
 Greater Malmö,1986K2,113
 Greater Malmö,1986K3,115
@@ -642,7 +645,8 @@ Greater Malmö,2025K1,1365
 Greater Malmö,2025K2,1343
 Greater Malmö,2025K3,1426
 Greater Malmö,2025K4,1402
-Greater Malmö,2026K1,1447
+Greater Malmö,2026K1,1431
+Greater Malmö,2026K2,1375
 Stockholm production county,1986K1,117
 Stockholm production county,1986K2,118
 Stockholm production county,1986K3,123
@@ -803,7 +807,8 @@ Stockholm production county,2025K1,1251
 Stockholm production county,2025K2,1260
 Stockholm production county,2025K3,1248
 Stockholm production county,2025K4,1236
-Stockholm production county,2026K1,1242
+Stockholm production county,2026K1,1241
+Stockholm production county,2026K2,1292
 Eastern Central Sweden,1986K1,108
 Eastern Central Sweden,1986K2,110
 Eastern Central Sweden,1986K3,113
@@ -964,7 +969,8 @@ Eastern Central Sweden,2025K1,800
 Eastern Central Sweden,2025K2,801
 Eastern Central Sweden,2025K3,818
 Eastern Central Sweden,2025K4,788
-Eastern Central Sweden,2026K1,823
+Eastern Central Sweden,2026K1,821
+Eastern Central Sweden,2026K2,816
 Småland with the islands,1986K1,105
 Småland with the islands,1986K2,106
 Småland with the islands,1986K3,109
@@ -1125,7 +1131,8 @@ Småland with the islands,2025K1,775
 Småland with the islands,2025K2,786
 Småland with the islands,2025K3,816
 Småland with the islands,2025K4,796
-Småland with the islands,2026K1,786
+Småland with the islands,2026K1,781
+Småland with the islands,2026K2,807
 South Sweden,1986K1,108
 South Sweden,1986K2,111
 South Sweden,1986K3,112
@@ -1286,7 +1293,8 @@ South Sweden,2025K1,1076
 South Sweden,2025K2,1071
 South Sweden,2025K3,1089
 South Sweden,2025K4,1092
-South Sweden,2026K1,1096
+South Sweden,2026K1,1089
+South Sweden,2026K2,1098
 West Sweden,1986K1,115
 West Sweden,1986K2,118
 West Sweden,1986K3,121
@@ -1447,7 +1455,8 @@ West Sweden,2025K1,1009
 West Sweden,2025K2,1021
 West Sweden,2025K3,1024
 West Sweden,2025K4,1017
-West Sweden,2026K1,1018
+West Sweden,2026K1,1016
+West Sweden,2026K2,1038
 Northern Central Sweden,1986K1,109
 Northern Central Sweden,1986K2,111
 Northern Central Sweden,1986K3,112
@@ -1608,7 +1617,8 @@ Northern Central Sweden,2025K1,686
 Northern Central Sweden,2025K2,692
 Northern Central Sweden,2025K3,692
 Northern Central Sweden,2025K4,687
-Northern Central Sweden,2026K1,691
+Northern Central Sweden,2026K1,682
+Northern Central Sweden,2026K2,704
 Central Norrland,1986K1,111
 Central Norrland,1986K2,116
 Central Norrland,1986K3,115
@@ -1769,7 +1779,8 @@ Central Norrland,2025K1,539
 Central Norrland,2025K2,573
 Central Norrland,2025K3,545
 Central Norrland,2025K4,556
-Central Norrland,2026K1,566
+Central Norrland,2026K1,559
+Central Norrland,2026K2,567
 Upper Norrland,1986K1,108
 Upper Norrland,1986K2,113
 Upper Norrland,1986K3,113
@@ -1930,4 +1941,5 @@ Upper Norrland,2025K1,646
 Upper Norrland,2025K2,658
 Upper Norrland,2025K3,666
 Upper Norrland,2025K4,657
-Upper Norrland,2026K1,702
+Upper Norrland,2026K1,698
+Upper Norrland,2026K2,659
