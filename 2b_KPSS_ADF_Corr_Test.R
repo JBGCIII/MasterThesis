@@ -3,7 +3,7 @@
 ###############################################################################
 
 data_set_adf_kpss <- read_csv(
-    "1_Processed_Data/1e_final_data_seasonal_outliers_adjusted.csv"
+    "1_Processed_Data/1d_Final_Data_Set.csv"
 )
 #============================================================================#
 #                              [1] Unit root Tests
@@ -28,6 +28,18 @@ summary(ur.kpss(data_set_adf_kpss$debt_growth))
 summary(ur.df(data_set_adf_kpss$real_house_price_growth, type = "none", selectlags = "AIC"))
 summary(ur.kpss(data_set_adf_kpss$real_house_price_growth))
 
+#Stationary Test for Exchange Rate
+summary(ur.df(data_set_adf_kpss$exchange_rate_growth, type = "none", selectlags = "AIC"))
+summary(ur.kpss(data_set_adf_kpss$exchange_rate_growth))
+
+#Stationary Test for Inflation
+summary(ur.df(data_set_adf_kpss$cpi_growth, type = "none", selectlags = "AIC"))
+summary(ur.kpss(data_set_adf_kpss$cpi_growth))
+
+
+#Stationary Test for Export Growth
+summary(ur.df(data_set_adf_kpss$export_growth, type = "none", selectlags = "AIC"))
+summary(ur.kpss(data_set_adf_kpss$export_growth))
 
 #----------------------------------------------------------------------------#
 #                                  Drift                                             
@@ -90,17 +102,24 @@ df_clean_pca <- df_stationary %>%
   dplyr::select(
     gdp_growth, 
     consumption_growth, 
-    real_house_price_growth,
     d_debt_growth, 
     d_asset_liability_ratio, 
     d_saving_rate, 
     d_debt_income, 
     d_interest_burden, 
-    d_policy_rate
+    real_house_price_growth,
+    cpi_growth,
+    d_policy_rate,
+    exchange_rate_growth,
+    export_growth
   )
 
 write.csv(cor(df_clean_pca, use = "complete.obs"), 
 "2_Data_Inspection/Correlation_Matrix_First_Diff.csv")
+
 # Run PCA on standardized, stationarized data
 pca_stationary <- prcomp(df_clean_pca, scale. = TRUE)
 summary(pca_stationary)
+
+
+pca_stationary

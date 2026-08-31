@@ -2,87 +2,18 @@
 ############################# 1.b DATA_SET_PROCESSING #########################
 ###############################################################################
 
-dir.create("1_Processed_Data/Data_Set_Columns",
- recursive = TRUE,
- showWarnings = FALSE)
 
 #============================================================================#
-#                 Column (1-2) SCB Real Growth Rate (GDP & Consumption) 
+#         Column (1-2; 10) SCB Real Growth Rate (GDP,Consumption, Export) 
 #============================================================================#
 
 # One could have named 0_Raw_Data but to it leads to Permission Issues.
 gdp_growth_seasonal_adjust <- read_csv("0_Raw_Data/1_SCB_gdp_growth_quarterly.csv")
 consumption_growth_seasonal_adjust <- read_csv("0_Raw_Data/2_SCB_household_consumption_real_quarterly.csv")
-
-#============================================================================#
-#                 Column (3) Household Debt Growth ("Loans, total")
-#============================================================================#
-
-fa <- read_csv("0_Raw_Data/4_SCB_household_financial_accounts_full_quarterly.csv")
-#----------------------------------------------------------------------------#
-
-household_debt <- fa %>%
-  filter(
-    item == "Loans, total",
-    # Note. In the data set there are two items named Loans Total. 
-    # This ensures that the right one is picked.
-    Balances > 80000 
-#----------------------------------------------------------------------------#
-
-  ) %>%
-  dplyr::select(quarter, Balances) %>%
-  arrange(quarter) %>%
-  mutate(
-    debt_growth = 100 * (log(Balances) - lag(log(Balances)))
-  )
-#----------------------------------------------------------------------------#
-write_csv(household_debt, "1_Processed_Data/Data_Set_Columns/3b_household_debt.csv")
+export_growth_seasonal_adjust <- read_csv("0_Raw_Data/5_SCB_Export_Growth.csv")
+asset_liability_ratio <- read_csv("1_Processed_Data/Data_Set_Columns/4b_financial_asset_liability_ratio.csv")
 
 
-
-#============================================================================#
-#        Column (4) Asset-Liability Ratio (With 2001K1 Structural Break Fix)
-#============================================================================#
-
-household_liab <- fa %>%
-  filter(item == "Liabilities (FL)", Balances > 80000) %>%
-  dplyr::select(quarter, Balances) %>%
-  rename(liabilities = Balances)
-#----------------------------------------------------------------------------#
-financial_assets <- fa %>%
-  filter(item == "Financial assets (FA)", Balances > 80000) %>%
-  dplyr::select(quarter, Balances) %>%
-  rename(assets = Balances)
-
-#----------------------------------------------------------------------------#
-
-# Calculate ratio at level shift
-liab_2001K1 <- household_liab %>% filter(quarter == "2001K1") %>% pull(liabilities)
-liab_2000K4 <- household_liab %>% filter(quarter == "2000K4") %>% pull(liabilities)
-shift_factor <- liab_2001K1 / liab_2000K4  # ~1.1227
-#----------------------------------------------------------------------------#
-
-financial_balance_sheet <- financial_assets %>%
-  left_join(household_liab, by = "quarter") %>%
-  arrange(quarter) %>%
-#----------------------------------------------------------------------------#
-
-
-  mutate(
-    liabilities_adj = if_else(
-      quarter < "2001K1",
-      liabilities * shift_factor, # Scale pre-2001 liabilities UP
-      liabilities
-    ),
-#----------------------------------------------------------------------------#
-
-    asset_liability_ratio = assets / liabilities_adj
-  ) %>%
-  dplyr::select(quarter, asset_liability_ratio)
-
-#----------------------------------------------------------------------------#
-write_csv(financial_balance_sheet, 
- "1_Processed_Data/Data_Set_Columns/4b_financial_asset_liability_ratio.csv")
 
 
 #============================================================================#
@@ -97,29 +28,29 @@ household_indicators <- sector %>%
   filter(
     sector == "Households",
     indicator %in% c(
-      "Net disposable income, real values, percentage growth, annual rate",
-      "Net saving rate",
+      "Net saving rate,  seasonally adjusted",
       "Debt, per cent of disposable income, net, four quarter",
       "Interest payments, gross, as a percentage of disposable income, net"
     )
   ) %>%
   pivot_wider(names_from = indicator, values_from = value) %>%
   rename(
-    income_growth = `Net disposable income, real values, percentage growth, annual rate`, #Not Included
-    saving_rate = `Net saving rate`,
+    saving_rate = `Net saving rate,  seasonally adjusted`,
     debt_income = `Debt, per cent of disposable income, net, four quarter`,
     interest_burden = `Interest payments, gross, as a percentage of disposable income, net`
   )
+  
 
 #----------------------------------------------------------------------------#
 write_csv(household_indicators, "1_Processed_Data/Data_Set_Columns/5b_household_indicators.csv")
+
 
 
 #============================================================================#
 #                     Column (10) CPI Quarterly Inflation
 #============================================================================#
 
-cpi <- read_csv("0_Raw_Data/5_SCB_CPI_monthly.csv")
+cpi <- read_csv("0_Raw_Data/6_SCB_CPI_monthly.csv")
 #----------------------------------------------------------------------------#
 cpi_quarterly <- cpi %>%
   mutate(
@@ -140,39 +71,13 @@ cpi_quarterly <- cpi %>%
 
 write_csv(cpi_quarterly, "1_Processed_Data/Data_Set_Columns/6b_inflation_quarterly.csv")
 
-#============================================================================#
-#                       Column (9) Real House Price Growth
-#============================================================================#
-
-hpi <- read_csv("0_Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv")
-
-# In case you were wondering about the similiarities between CPI and Growth.
-# The following dates.
-#  region quarter Index nominal_hpi_growth
-#  <chr>  <chr>   <dbl>              <dbl>
-#1 Sweden 1997K4    201                  0
-#2 Sweden 1999K4    242                  0
-
-real_house_prices <- hpi %>%
-  filter(region == "Sweden") %>%
-  dplyr::select(quarter, Index) %>%
-  left_join(cpi_quarterly, by = "quarter") %>%
-  mutate(
-    nominal_house_price_growth = 100 * (log(Index) - lag(log(Index))),
-    real_house_price_growth = nominal_house_price_growth - cpi_growth
-  ) %>%
-  dplyr::select(quarter, real_house_price_growth)
-
-#----------------------------------------------------------------------------#
-
-write_csv(real_house_prices, "1_Processed_Data/Data_Set_Columns/7b_real_house_price_growth.csv")
 
 
 # ==============================================================================
 #                      Column (11) Riksbank Policy Rate
 # ==============================================================================
 
-repo_rate <- read_csv("0_Raw_Data/7_Riksbank_policy_rate_daily.csv")
+repo_rate <- read_csv("0_Raw_Data/8_Riksbank_policy_rate_daily.csv")
 
 
 policy_rate_quarterly <- repo_rate %>%
@@ -216,7 +121,7 @@ write_csv(
 #                         Column (12)  KIX Exchange Rate Index
 # ==============================================================================
 
-KIX92_quarterly <- read_csv("0_Raw_Data/8_KIX_Exchange_Rate_Index.csv")
+KIX92_quarterly <- read_csv("0_Raw_Data/9_KIX_Exchange_Rate_Index.csv")
 
 #----------------------------------------------------------------------------#
 
@@ -275,7 +180,8 @@ macro_households <- list(
   real_house_prices,
   cpi_quarterly %>% dplyr::select(quarter, cpi_growth),
   policy_rate_quarterly,
-  KIX92_quarterly %>% dplyr::select(quarter, exchange_rate_growth)
+  KIX92_quarterly %>% dplyr::select(quarter, exchange_rate_growth),
+  export_growth_seasonal_adjust %>% dplyr::select(quarter, export_growth)
 ) %>%
   reduce(full_join, by = "quarter") %>%
   arrange(quarter) %>%
@@ -285,6 +191,8 @@ macro_households <- list(
 
 # Save master dataset
 write_csv(macro_households, "1_Processed_Data/1c_Processed_Data_Set.csv")
+
+
 
 
 
