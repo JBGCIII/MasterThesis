@@ -43,43 +43,50 @@ ha <- read_csv("0_Raw_Data/8_SCB_house_price_index_quarterly_all_regions.csv")
 
 #----------------------------------------------------------------------------#
 
-# Annual non-financial assets
-All_non_financial_assets <- ya %>%
+# Define housing items according to SCB national balance sheet standards
+housing_items <- c(
+  "Dwellings ",                                    # [7] Structure value
+  "Land underlying dwellings",                     # [33] Land value
+  "Other equity, tenant ownership rights"          # [50] Tenant-owned apartments (bostadsrätter)
+)
+housing_assets_annual <- annual_balance_sheet %>%
+  # Strip trailing spaces from asset names to ensure clean matching
+  mutate(type_clean = trimws(`type of asset`)) %>%
   filter(
-    `type of asset` == "All non-financial assets",
+    type_clean %in% trimws(housing_items),
     year >= 1996,
     year <= 2026
   ) %>%
-  select(
-    year,
-    `Closing balance, SEK million`
+  group_by(year) %>%
+  summarize(
+    housing_assets = sum(`Closing balance, SEK million`, na.rm = TRUE),
+    .groups = "drop"
   ) %>%
   arrange(year)
 
-All_non_financial_assets_ts <- ts(
-  All_non_financial_assets$`Closing balance, SEK million`,
-  start = min(All_non_financial_assets$year),
+# Convert to annual time series
+housing_assets_ts <- ts(
+  housing_assets_annual$housing_assets,
+  start = min(housing_assets_annual$year),
   frequency = 1
 )
 
+
 #----------------------------------------------------------------------------#
 
-# Quarterly real house-price index
-housing_index <- ha %>%
-  filter(region == "Sweden") %>%
-  select(quarter, Index) %>%
+housing_index_filtered <- ha %>%
+  filter(region == "Sweden", quarter >= "1996K1") %>%
   arrange(quarter)
 
 housing_index_ts <- ts(
-  housing_index$Index,
-  start = c(1986, 1),
+  housing_index_filtered$Index,
+  start = c(1996, 1), # Year 1996, Quarter 1
   frequency = 4
 )
-
 #----------------------------------------------------------------------------#
 
 fit_nfa_denton_cholette <- td(
-  All_non_financial_assets_ts ~ 0 + housing_index_ts,
+  housing_assets_ts ~ 0 + housing_index_ts,
   to = "quarterly",
   method = "denton-cholette",
   conversion = "last"
@@ -90,7 +97,7 @@ nfa_quarterly <- predict(fit_nfa_denton_cholette)
 #----------------------------------------------------------------------------#
 
 fit_nfa_chow_lin <- td(
-  All_non_financial_assets_ts ~ 0 + housing_index_ts,
+  housing_assets_ts ~ 0 + housing_index_ts,
   to = "quarterly",
   method = "chow-lin-maxlog",
   conversion = "last"

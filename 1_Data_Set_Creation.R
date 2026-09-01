@@ -113,7 +113,7 @@ annual_balance_sheet <- download_pxweb(
   url_balance_sheet,
   list(
     Sektor = "S14",
-    Tillgangsslag = c("A", "AN", "AN1", "AN2", "AFA", "AFL", "B90"),
+    Tillgangsslag = "*",
     ContentsCode = "000000KI",
     Tid = "*"
   )

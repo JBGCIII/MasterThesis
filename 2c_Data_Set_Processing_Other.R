@@ -14,7 +14,7 @@ export_growth_seasonal_adjust <- read_csv("0_Raw_Data/5_SCB_Export_Growth.csv")
 asset_liability_ratio <- read_csv("1_Processed_Data/Data_Set_Columns/4b_financial_asset_liability_ratio.csv")
 
 
-
+source("0c_FEVD_Function.R")
 
 #============================================================================#
 #         Column (5-8) Household Financial Indicators
