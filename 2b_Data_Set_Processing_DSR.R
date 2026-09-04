@@ -5,7 +5,7 @@
 # 1. Load Data
 # ------------------------------------------------------------------------------
 scb_raw <- read_csv("0_Raw_Data/3_SCB_household_sector_indicators.csv")
-bis_dsr <- read_csv("0_Raw_Data/11_Debt_Service_Ratio.csv")
+bis_dsr <- read_csv("0_Raw_Data/10_Debt_Service_Ratio.csv")
 
 
 # ------------------------------------------------------------------------------
@@ -35,7 +35,7 @@ scb_clean <- scb_raw %>%
       "Interest payments, gross, as a percentage of disposable income, net"
     )
   ) %>%
-  # If both sectors exist for a quarter, prefer "Households and NPISH"
+  # If both sectors exist for a quarter
   group_by(date, indicator) %>%
   arrange(desc(sector)) %>% 
   slice(1) %>%
@@ -98,4 +98,4 @@ final_dsr_series <- bind_rows(historical_spliced, bis_dsr) %>%
 # ------------------------------------------------------------------------------
 # 5. Export Complete Combined Series
 # ------------------------------------------------------------------------------
-write_csv(final_dsr_series, "0_Raw_Data/11_Debt_Service_Ratio_1996_2026_Full.csv")
+write_csv(final_dsr_series, "1_Processed_Data/Data_Set_Columns/10b_Debt_Service_Ratio_1996_2026_Full.csv")
