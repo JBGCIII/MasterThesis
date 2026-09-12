@@ -32,7 +32,10 @@ needed_pkgs <- c(
   "abind",      # Combine multidimensional arrays
   "bsvars",     # Bayesian estimation of structural vector autoregressive models
   "bsvarSIGNs", # Add-on for BSVAR identified by sign, zero, and narrative restrictions
-  "rlang"       # Core language features and metaprogramming
+  "rlang",       # Core language features and metaprogramming
+  
+  "tempdisagg",
+  "rsdmx"
 )
 
 # Package citated using the function
@@ -71,14 +74,18 @@ suppressPackageStartupMessages(
 
 install.packages("tempdisagg")
 # Load tempdisagg and zoo (useful for handling date objects)
+
 library(tempdisagg)
-library(zoo)
-
-
 
 if (!require("rjson")) install.packages("rjson")
 
 
-library(rsdmx)
-library(dplyr)
-library(readr)
+
+
+install.packages("ecb")
+
+library(readxl)
+
+
+library(tidyverse)
+library(tsibble)

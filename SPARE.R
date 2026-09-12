@@ -30,7 +30,6 @@ fa_quarterly_adjusted <- fa %>%
     .groups = "drop"
   )
 
-
 #============================================================================#
 #                   Real Asset Quarterly Interpolation
 #============================================================================#
@@ -38,7 +37,9 @@ fa_quarterly_adjusted <- fa %>%
 # Assets Yearly,
 ya <- read_csv("0_Raw_Data/4_SCB_household_balance_sheet_annual.csv")
 # House Price Index, Quarterly
-ha <- read_csv("0_Raw_Data/8_SCB_house_price_index_quarterly_all_regions.csv")
+ha <- read_csv("0_Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv")
+
+unique(ya$`type of asset`)
 
 
 #----------------------------------------------------------------------------#
@@ -47,9 +48,12 @@ ha <- read_csv("0_Raw_Data/8_SCB_house_price_index_quarterly_all_regions.csv")
 housing_items <- c(
   "Dwellings ",                                    # [7] Structure value
   "Land underlying dwellings",                     # [33] Land value
-  "Other equity, tenant ownership rights"          # [50] Tenant-owned apartments (bostadsrätter)
+   "Other equity, tenant ownership rights"        # [50] Tenant-owned apartments (bostadsrätter)
+                                                   # The item needs to be be removed as tenant ownership rights"
+                                                   # are already included in financial asset (Thank you ESA 2010)
+                                                   # That makes sense....
 )
-housing_assets_annual <- annual_balance_sheet %>%
+housing_assets_annual <- ya %>%
   # Strip trailing spaces from asset names to ensure clean matching
   mutate(type_clean = trimws(`type of asset`)) %>%
   filter(
@@ -71,7 +75,7 @@ housing_assets_ts <- ts(
   frequency = 1
 )
 
-
+housing_assets_ts
 #----------------------------------------------------------------------------#
 
 housing_index_filtered <- ha %>%
@@ -221,3 +225,28 @@ write_csv(
 )
 
 
+
+
+
+
+
+
+# Financial Assets, Quarterly
+fa <- read_csv("0_Raw_Data/5_SCB_household_financial_accounts_full_quarterly.csv")
+
+unique(fa$item)
+
+items_to_subtract <- c(
+  "Life insurance and annuity entitlements",
+  "Pension funds reserves, total",
+  "Other insurance technical reserves",
+  "Entitlements to non-pension benefits"
+)
+
+fa_quarterly_adjusted <- fa %>%
+  group_by(quarter) %>% # Grouping by quarter ensures calculations stay per quarter
+  summarize(
+    FA_adjusted = sum(Balances[item == "Financial assets (FA)"], na.rm = TRUE) - 
+                  sum(Balances[item %in% items_to_subtract], na.rm = TRUE),
+    .groups = "drop"
+  )

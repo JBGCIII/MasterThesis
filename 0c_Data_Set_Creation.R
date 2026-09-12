@@ -498,5 +498,24 @@ write_csv(
 
 
 
+#===========================================================================#
+#               [16] ECB: Monthly Euro Area HICP
+#===========================================================================#
 
+# ECB series:
+# ICP.M.U2.N.000000.4.INX
+# Monthly Euro Area HICP, Overall Index, 2015=100
 
+ea_hicp_raw <- get_data("ICP.M.U2.N.000000.4.INX")
+
+# Save raw data
+dir.create(
+  "0_Raw_Data",
+  showWarnings = FALSE,
+  recursive = TRUE
+)
+
+write_csv(
+  ea_hicp_raw,
+  "0_Raw_Data/16_ECB_Euro_Area_HICP_monthly_raw.csv"
+)

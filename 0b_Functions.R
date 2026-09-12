@@ -40,26 +40,6 @@ download_pxweb <- function(url, query){
 }
 
 
-
-
-## (1) download_pxweb
-# Purpose: SCB PXWEB downloader, defaulting to text to match existing scripts
-# while allowing code-based queries when required by specific SCB tables.
-
-download_pxweb_text <- function(url, query, 
-                           col_type = "text", 
-                           val_type = "text"){
-
-  pxq <- pxweb_query(query)
-  
-  pxweb_get_data(
-    url = url,
-    query = pxq,
-    column.name.type = col_type,
-    variable.value.type = val_type
-  )
-}
-
 #------------------------------------------------------------------------------#
 
 ## (2) get_riksbank_series
@@ -95,6 +75,35 @@ get_riksbank_series <- function(series_id,
   ) |>
     as.data.frame()
 
+}
+
+
+
+
+
+
+
+
+
+
+get_riksbank_series <- function(series_id,
+                                from = "1995-01-01",
+                                to = Sys.Date()) {
+
+  url <- paste0(
+    "https://api.riksbank.se/swea/v1/Observations/",
+    series_id, "/", from, "/", to
+  )
+
+  response <- httr::GET(url)
+  httr::stop_for_status(response)
+
+  # Explicitly using jsonlite::fromJSON guarantees row-bind behavior
+  raw_text <- httr::content(response, "text", encoding = "UTF-8")
+  parsed   <- jsonlite::fromJSON(raw_text, simplifyVector = TRUE)
+
+  # Explicitly bind list elements into rows instead of relying on generic as.data.frame
+  data.frame(parsed)
 }
 
 

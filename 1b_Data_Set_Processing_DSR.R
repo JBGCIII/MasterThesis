@@ -1,12 +1,8 @@
-
-
-
 # ------------------------------------------------------------------------------
 # 1. Load Data
 # ------------------------------------------------------------------------------
-scb_raw <- read_csv("0_Raw_Data/3_SCB_household_sector_indicators.csv")
-bis_dsr <- read_csv("0_Raw_Data/10_Debt_Service_Ratio.csv")
-
+scb_raw <- read_csv("0_Raw_Data/3_SCB_household_sector_a_indicators.csv")
+bis_dsr <- read_csv("0_Raw_Data/11_Debt_Service_Ratio.csv")
 
 # ------------------------------------------------------------------------------
 # 2. Clean & Process SCB Data
@@ -22,20 +18,19 @@ scb_clean <- scb_raw %>%
     value = all_of(val_col)
   ) %>%
   mutate(
+    # Stringr string replacement for quarters and decimal commas
     date = str_replace(quarter_raw, "K", "-Q"),
-    # Replace Swedish decimal commas if present before converting to numeric
     value = as.numeric(str_replace(as.character(value), ",", "."))
   ) %>%
-  # Filter explicitly for 'Households and NPISH' (or fallback to 'Households')
-  # to prevent duplicate rows per quarter
+  # Filter explicitly for Household sector indicators
   filter(
-    sector %in% c("Households"),
+    sector %in% c("Households and NPISH", "Households"),
     indicator %in% c(
       "Debt, per cent of disposable income, net, four quarter",
       "Interest payments, gross, as a percentage of disposable income, net"
     )
   ) %>%
-  # If both sectors exist for a quarter
+  # Deduplicate in case both 'Households' and 'Households and NPISH' exist
   group_by(date, indicator) %>%
   arrange(desc(sector)) %>% 
   slice(1) %>%
@@ -71,12 +66,10 @@ scb_dsr_calc <- scb_clean %>%
     annuity_factor = i_qtr / (1 - (1 + i_qtr)^(-s)),
     
     # 5. Model-estimated annual Debt Service Ratio (%)
-    #    DSR = 4 * Quarterly Payment / Annual Income
     dsr_model = 4 * (dti_ratio / 100) * annuity_factor * 100
   )
 
-
-  # ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # 4. Level-Adjustment & Splice (1996 Q2 - 1998 Q4)
 # ------------------------------------------------------------------------------
 # Calculate splicing adjustment ratio at 1999-Q1 overlap
@@ -87,7 +80,7 @@ splice_factor <- overlap_bis / overlap_model
 
 # Apply adjustment factor to pre-1999 model estimates
 historical_spliced <- scb_dsr_calc %>%
-  filter(date < "1999-Q1" & date >= "1996-Q2") %>%
+  filter(date < "1999-Q1" & date >= "1996-Q1") %>%
   mutate(dsr_value = round(dsr_model * splice_factor, 1)) %>%
   select(date, dsr_value)
 
@@ -95,7 +88,23 @@ historical_spliced <- scb_dsr_calc %>%
 final_dsr_series <- bind_rows(historical_spliced, bis_dsr) %>%
   arrange(date)
 
+
+# ------------------------------------------------------------------------------
+
+
+# Debt Service Ratio ("1996-Q1" -> "1996Q1")
+debt_service_ratio <- final_dsr_series %>%
+  rename(date = 1, dsr_value = 2) %>%
+  mutate(quarter = gsub("-", "", date)) %>%
+  dplyr::select(quarter, dsr_value)
+
+
+
 # ------------------------------------------------------------------------------
 # 5. Export Complete Combined Series
 # ------------------------------------------------------------------------------
-write_csv(final_dsr_series, "1_Processed_Data/Data_Set_Columns/10b_Debt_Service_Ratio_1996_2026_Full.csv")
+write_csv(
+  debt_service_ratio, 
+  "1_Processed_Data/Data_Set_Columns/3-5_A_debt_service_ratio.csv"
+)
+
