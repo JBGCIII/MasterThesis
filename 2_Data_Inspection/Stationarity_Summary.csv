@@ -1,0 +1,20 @@
+Variable,ADF_Stat,ADF_Crit_5pct,ADF_Pass,KPSS_Stat,KPSS_Crit_5pct,KPSS_Pass,Verdict
+oil_price_log,-2.06,-2.88,FALSE,1.451,0.463,FALSE,Non-Stationary (I(1))
+fed_funds_rate,-2.775,-2.88,FALSE,0.703,0.463,FALSE,Non-Stationary (I(1))
+kix_gdp_log,-0.98,-2.88,FALSE,2.447,0.463,FALSE,Non-Stationary (I(1))
+ea_hicp_log,0.541,-2.88,FALSE,2.406,0.463,FALSE,Non-Stationary (I(1))
+gdp_se_log,-1.768,-2.88,FALSE,2.426,0.463,FALSE,Non-Stationary (I(1))
+cons_total_log,-1.797,-2.88,FALSE,2.458,0.463,FALSE,Non-Stationary (I(1))
+cons_durable_log,-2.969,-2.88,TRUE,2.436,0.463,FALSE,"Conflicting (ADF says I(0), KPSS says I(1))"
+cons_habitual_log,-1.758,-2.88,FALSE,2.442,0.463,FALSE,Non-Stationary (I(1))
+unemployment_rate,-2.658,-2.88,FALSE,0.189,0.463,TRUE,"Conflicting (ADF says I(1), KPSS says I(0))"
+consumer_confidence,-3.86,-2.88,TRUE,0.669,0.463,FALSE,"Conflicting (ADF says I(0), KPSS says I(1))"
+house_price_real_log,-2.315,-2.88,FALSE,2.324,0.463,FALSE,Non-Stationary (I(1))
+debt_income,-2.298,-2.88,FALSE,2.354,0.463,FALSE,Non-Stationary (I(1))
+debt_to_asset_ratio,-2.555,-2.88,FALSE,2.084,0.463,FALSE,Non-Stationary (I(1))
+dsr_value,-1.138,-2.88,FALSE,2.231,0.463,FALSE,Non-Stationary (I(1))
+liquid_asset_to_income_ratio,-1.017,-2.88,FALSE,1.879,0.463,FALSE,Non-Stationary (I(1))
+saving_rate,-0.765,-2.88,FALSE,2.19,0.463,FALSE,Non-Stationary (I(1))
+cpi_log,0.408,-2.88,FALSE,2.256,0.463,FALSE,Non-Stationary (I(1))
+policy_rate,-2.621,-2.88,FALSE,1.347,0.463,FALSE,Non-Stationary (I(1))
+kix_real_log,-2.885,-2.88,TRUE,1.626,0.463,FALSE,"Conflicting (ADF says I(0), KPSS says I(1))"
