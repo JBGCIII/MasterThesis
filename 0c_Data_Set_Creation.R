@@ -212,7 +212,7 @@ write_csv(
 )
 
 #============================================================================#
-#                        [8] OECD: Real GDP Growth G7
+#                  [8] 31 Trading Partners real GDP growth (OECD)
 #============================================================================#
 
   url_kix_gdp <- paste0(
@@ -236,10 +236,46 @@ kix_gdp_q <- kix_gdp_raw %>%
   ) %>%
   filter(country != "RUS") %>%
   arrange(country, quarter)
+# Yes, I know I could have remove RUS in the extraction process but I am afraid
+# the thing is going to break down!
+
 
 write_csv(
   kix_gdp_q,
-  "0_Raw_Data/8_D_OECD_KIX_real_gdp_growth_quarterly.csv"
+  "0_Raw_Data/8_A_trading_partners_real_gdp_quarterly.csv"
+)
+
+# ------------------------------------------------------------------------------
+# Weights and CPI are provided in the statistic folder. The CPI cpuld not be
+# downloaded using API, while the weight are extracted from a XSLS file that is
+# online but could go down best not risk it. See 0_Raw_Data_Static
+
+# ------------------------------------------------------------------------------
+
+#                   FRED: China Annual Real GDP  [8C]
+# China is missing its real GDP from before 2011, and does not readily
+# make it available quarterly (妈的!!!!!!!!!)
+url_china_rgdp <- paste0(
+  "https://fred.stlouisfed.org/graph/fredgraph.csv?",
+  "id=RGDPNACNA666NRUG"
+)
+
+china_rgdp <- read_csv(
+  url_china_rgdp,
+  show_col_types = FALSE
+) %>%
+  rename(
+    GDP_Real = RGDPNACNA666NRUG
+  ) %>%
+  mutate(
+    observation_date = as.Date(observation_date),
+    year = as.integer(format(observation_date, "%Y"))
+  ) %>%
+  arrange(year)
+
+write_csv(
+  china_rgdp,
+  "0_Raw_Data/8_C_FRED_china_real_GDP_annual.csv"
 )
 
 
@@ -294,36 +330,6 @@ write_csv(df_clean, "0_Raw_Data/11_Debt_Service_Ratio.csv")
 
 
 #============================================================================#
-#              [11] FED: Swedish Quartely Unemployment Rate (SA)
-#============================================================================#
-
-# Sweden unemployment rate – quarterly, seasonally adjusted
-# OECD harmonized unemployment rate via FRED
-# Population: 15 years and over
-# Available from 1983Q1
-
-url_unemployment_quarterly <- paste0(
-  "https://fred.stlouisfed.org/graph/fredgraph.csv?",
-  "id=LRHUTTTTSEQ156S"
-)
-
-unemployment_rate_raw <- read_csv(
-  url_unemployment_quarterly,
-  show_col_types = FALSE
-) %>%
-rename(
-   Unemployment_Rate = LRHUTTTTSEQ156S )%>%
-mutate(
-    observation_date = as.yearqtr(observation_date)
-  )
-
-write_csv(
-  unemployment_rate_raw,
-  "0_Raw_Data/12_FRED_Sweden_unemployment_rate_quarterly.csv"
-)
-
-
-#============================================================================#
 #              [12] FED: Swedish Quartely Unemployment Rate (SA)
 #============================================================================#
 
@@ -351,6 +357,7 @@ write_csv(
   unemployment_rate_raw,
   "0_Raw_Data/12_FRED_Sweden_unemployment_rate_quarterly.csv"
 )
+
 
 
 #============================================================================#
@@ -414,34 +421,6 @@ write_csv(
 )
 
 
-#============================================================================#
-#                   FRED: China Annual Real GDP  [8C]
-#============================================================================#
-
-url_china_rgdp <- paste0(
-  "https://fred.stlouisfed.org/graph/fredgraph.csv?",
-  "id=RGDPNACNA666NRUG"
-)
-
-china_rgdp <- read_csv(
-  url_china_rgdp,
-  show_col_types = FALSE
-) %>%
-  rename(
-    GDP_Real = RGDPNACNA666NRUG
-  ) %>%
-  mutate(
-    observation_date = as.Date(observation_date),
-    year = as.integer(format(observation_date, "%Y"))
-  ) %>%
-  arrange(year)
-
-write_csv(
-  china_rgdp,
-  "0_Raw_Data/8_C_FRED_china_real_GDP_annual.csv"
-)
-
-
 #===========================================================================#
 #               [15] NIER: Consumer Confidence Indicator
 #===========================================================================#
@@ -462,28 +441,4 @@ test <- download_pxweb(
 write_csv(
   test,
   "0_Raw_Data/15_NIER_Consumer_Confidence.csv"
-)
-
-
-
-#===========================================================================#
-#               [16] ECB: Monthly Euro Area HICP
-#===========================================================================#
-
-# ECB series:
-# ICP.M.U2.N.000000.4.INX
-# Monthly Euro Area HICP, Overall Index, 2015=100
-
-ea_hicp_raw <- get_data("ICP.M.U2.N.000000.4.INX")
-
-# Save raw data
-dir.create(
-  "0_Raw_Data",
-  showWarnings = FALSE,
-  recursive = TRUE
-)
-
-write_csv(
-  ea_hicp_raw,
-  "0_Raw_Data/16_ECB_Euro_Area_HICP_monthly_raw.csv"
 )

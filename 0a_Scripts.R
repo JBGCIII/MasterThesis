@@ -85,7 +85,5 @@ if (!require("rjson")) install.packages("rjson")
 install.packages("ecb")
 
 library(readxl)
-
-
 library(tidyverse)
 library(tsibble)

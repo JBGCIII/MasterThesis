@@ -1,9 +1,16 @@
-dir.create("1_Processed_Data/Data_Set_Columns",
- recursive = TRUE,
- showWarnings = FALSE)
+###############################################################################
+############################# 1.a KIX WEIGHTED GPD ############################
+###############################################################################
 
-kix_gdp_raw <- read.csv("0_Raw_Data/8_A_OECD_KIX_real_gdp_growth_quarterly.csv")
-kix_weights_format <- read.csv("0_Raw_Data/8_B_KIX_weights.csv")
+#Rikbankens uses KIX Weighted GDP (Series ForeignGDPisatrade-weightedaverageof
+#GDP,whereKIX-weightsareused) to denote the GDP weighted by KIX Weight. 
+#The series is not made readily available to the public so I decided to
+# consturct it myself. Thank you Rikbanks! Thank you!
+
+
+dir.create("1_Processed_Data/Data_Set_Columns", recursive = TRUE, showWarnings = FALSE)
+kix_gdp_raw <- read.csv("0_Raw_Data/8_A_trading_partners_real_gdp_quarterly.csv")
+kix_weights_format <- read.csv("0_Raw_Data/8_D_KIX_weights.csv")
 china_rgdp <- read.csv("0_Raw_Data/8_C_FRED_china_real_GDP_annual.csv")
 
 

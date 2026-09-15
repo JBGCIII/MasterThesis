@@ -46,46 +46,6 @@ download_pxweb <- function(url, query){
 # Purpose: Helps to streamline the download from Riksbanken API
 # originally I downloaded multiple items from Riksbanken (deposit_rate, lending_rate)
 # so it was necessary then, but not strictly necessary now.
-
-# Riksbank SWEA downloader
-start_date <- "1995-01-01"
-get_riksbank_series <- function(series_id,
-                                from = "1995-01-01",  # Self-contained default
-                                to = Sys.Date()) {
-
-  url <- paste0(
-    "https://api.riksbank.se/swea/v1/Observations/",
-    series_id,
-    "/",
-    from,
-    "/",
-    to
-  )
-
-  response <- GET(url)
-
-  stop_for_status(response)
-
-  fromJSON(
-    content(
-      response,
-      "text",
-      encoding = "UTF-8"
-    )
-  ) |>
-    as.data.frame()
-
-}
-
-
-
-
-
-
-
-
-
-
 get_riksbank_series <- function(series_id,
                                 from = "1995-01-01",
                                 to = Sys.Date()) {
@@ -156,52 +116,6 @@ export_hyperparameters <- function(estimation_obj, target_cols, file_path = "Out
   return(invisible(hyper_df))
 }
 
-
-#------------------------------------------------------------------------------#
-
-## (4) compute_and_export_ess
-# Purpose: This function allows to easily extract effective sample size from
-# a model and export it as CSV. Gives you insight right away. That way you
-# don't need to find it yourself while looking trough the code.
-
-compute_and_export_ess <- function(model_obj, 
-                                   lambda_idx = 10, 
-                                   alpha_idx = 11, 
-                                   file_path = NULL) {
-  
-  # 1. Safely extract hyperparameter posterior chains
-  if (is.null(model_obj$posterior$hyper)) {
-    stop("The model object does not contain 'posterior$hyper'. Check the object structure.")
-  }
-  
-  posterior_lambda <- model_obj$posterior$hyper[lambda_idx, ]
-  posterior_alpha  <- model_obj$posterior$hyper[alpha_idx, ]
-  
-  # 2. Compute ESS using coda
-  ess_lambda <- coda::effectiveSize(coda::as.mcmc(posterior_lambda))
-  ess_alpha  <- coda::effectiveSize(coda::as.mcmc(posterior_alpha))
-  
-  # 3. Create summary data frame
-  ess_summary <- data.frame(
-    Parameter = c("Lambda", "Alpha"),
-    ESS       = c(round(as.numeric(ess_lambda), 1), 
-                  round(as.numeric(ess_alpha), 1))
-  )
-  
-  # 4. Optional CSV export
-  if (!is.null(file_path)) {
-    # Automatically create output folder structure if it doesn't exist
-    dir_path <- dirname(file_path)
-    if (!dir.exists(dir_path)) {
-      dir.create(dir_path, recursive = TRUE)
-    }
-    
-    write.csv(ess_summary, file = file_path, row.names = FALSE)
-    message(paste("ESS diagnostics saved to:", file_path))
-  }
-  
-  return(ess_summary)
-}
 
 
 #============================================================================#

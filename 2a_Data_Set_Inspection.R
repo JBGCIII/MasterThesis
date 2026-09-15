@@ -4,9 +4,7 @@
 
 dir.create("2_Data_Inspection/Outliers", recursive = TRUE, showWarnings = FALSE)
 
-macro_data_inspection <- read_csv("1_Processed_Data/1_b_inspection_data.csv")
-
-
+macro_data_inspection <- read_csv("1d_pre_inspection_data_narrow.csv")
 
 #============================================================================#
 #                              2. Seasonal Adjustment
@@ -25,7 +23,7 @@ for (var_name in numeric_vars) {
   vec <- na.omit(macro_data_inspection[[var_name]])
   
   # Convert to quarterly ts object
-  var_ts <- ts(vec, start = c(1996, 2), frequency = 4)
+  var_ts <- ts(vec, start = c(1996, 1), frequency = 4)
   
   # Run test with tryCatch to skip problematic series cleanly
   is_seas <- tryCatch({
@@ -41,8 +39,7 @@ for (var_name in numeric_vars) {
 
 write.csv(results, "2_Data_Inspection/Seasonality.csv")
 
-# Load data and seasonality inspection output
-macro_data  <- read_csv("1_Processed_Data/1_b_inspection_data.csv")
+# Load seasonality inspection output
 seasonality <- read_csv("2_Data_Inspection/Seasonality.csv")
 
 # Identify variables that need adjustment
@@ -50,11 +47,11 @@ vars_to_adjust <- seasonality %>%
   filter(Is_Seasonal == TRUE) %>% 
   pull(Variable)
 
-macro_data_sa <- macro_data
+macro_data_sa <- macro_data_inspection
 
 # Apply X-13-ARIMA-SEATS adjustment to flagged variables
 for (var in vars_to_adjust) {
-  var_ts <- ts(macro_data[[var]], start = c(1996, 2), frequency = 4)
+  var_ts <- ts(macro_data_inspection[[var]], start = c(1996, 2), frequency = 4)
   
   # Run X-13-ARIMA-SEATS with fallback handling
   sa_ts <- tryCatch({
@@ -69,14 +66,14 @@ for (var in vars_to_adjust) {
 }
 
 # Export the seasonally adjusted dataset for BSVAR estimation
-write_csv(macro_data_sa, "1_Processed_Data/1_c_seasonally_adjusted_data.csv")
+write_csv(macro_data_sa, "2b_seasonally_adjusted_data.csv")
 
 
 #============================================================================#
 #                                      2.Outliers
 #============================================================================#
 
-macro_data_inspection_outliers <- read_csv("1_Processed_Data/1_c_seasonally_adjusted_data.csv")
+macro_data_inspection_outliers <- read_csv("2b_seasonally_adjusted_data.csv")
 
 numeric_vars <- names(macro_data_inspection)[sapply(macro_data_inspection, is.numeric)]
 
@@ -84,7 +81,7 @@ numeric_vars <- names(macro_data_inspection)[sapply(macro_data_inspection, is.nu
 all_outliers_list <- lapply(numeric_vars, function(col_name) {
   
   # Convert column to time series directly
-  x_ts <- stats::ts(macro_data_inspection[[col_name]], start = c(1996, 2), frequency = 4)
+  x_ts <- stats::ts(macro_data_inspection[[col_name]], start = c(1996, 1), frequency = 4)
   
   # Fit tso
   outlier_fit <- suppressWarnings(tso(x_ts))
@@ -117,8 +114,10 @@ write.csv(outlier_summary_df,
 #============================================================================#
 #                              3. Final Data Set
 #============================================================================#
-
-macro_data_inspection_final <- read_csv("1_Processed_Data/1_c_seasonally_adjusted_data.csv")
+# Inspecting the final data set. And now you are asking, Joaquim you do not
+# need to re-read the data from CSV file multiple times! I know but let me
+# do this this way for safety!
+macro_data_inspection_final <- read_csv("2b_seasonally_adjusted_data.csv")
 
 stats <- describe(macro_data_inspection_final)
 
