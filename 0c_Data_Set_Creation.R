@@ -1,5 +1,5 @@
 ###############################################################################
-############################# 1.a DATA_SET_CREATION ###########################
+############################# 0.a DATA_SET_CREATION ###########################
 ###############################################################################
 
 dir.create( "0_Raw_Data", showWarnings = FALSE) # Create Directory
@@ -271,38 +271,6 @@ write_csv(KIX92,"0_Raw_Data/10_KIX_Exchange_Rate_Index.csv")
 # Effective exchange rate index - KIX and TCW
 # The exchange rate index weights together different bilateral exchange rates 
 # to create an effective (or average) exchange rate.
-
-
-#============================================================================#
-#                         Riksbank KIX weights [8_B]
-#============================================================================#
-#Used for KIX GDP 
-# Extract Weights directly from XLSX file made available by Riksbank.
-url_kix_weights <- paste0(
-  "https://www.riksbank.se/globalassets/media/statistik/",
-  "vikter/kix-vikter_sve2.xlsx"
-)
-
-# Create a temporary file
-temp_kix <- tempfile(fileext = ".xlsx")
-download.file(url_kix_weights, temp_kix, mode = "wb")
-
-# Read the first sheet in the xlsx
-kix_weights_raw <- read_excel(temp_kix, sheet = 1, col_names = FALSE)
-
-# Years the weights refer to
-kix_years <- as.numeric(kix_weights_raw[1, 2:33])
-kix_years <- ifelse(
-  kix_years > 30000,
-  as.integer(format(as.Date(kix_years, origin = "1899-12-30"), "%Y")),
-  kix_years
-)
-
-# Country names and weights
-kix_weights <- kix_weights_raw[4:36, 1:33]
-names(kix_weights)[1] <- "country"
-names(kix_weights)[2:33] <- kix_years
-write.csv( kix_weights, "0_Raw_Data/8_B_KIX_weights.csv")
 
 
 #============================================================================#
