@@ -4,7 +4,7 @@
 
 dir.create("2_Data_Inspection/Outliers", recursive = TRUE, showWarnings = FALSE)
 
-macro_data_inspection <- read_csv("1d_pre_inspection_data_narrow.csv")
+macro_data_inspection <- read_csv("1d_pre_inspection_data_narrowed.csv")
 
 #============================================================================#
 #                              2. Seasonal Adjustment

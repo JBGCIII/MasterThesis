@@ -118,6 +118,41 @@ export_hyperparameters <- function(estimation_obj, target_cols, file_path = "Out
 
 
 
+
+
+
+
+
+
+# Helper function to get max modulus (spectral radius) for a fitted posterior object
+check_posterior_stability <- function(posterior_obj, p) {
+  # Extract autoregressive matrices: dim is (N x K x S)
+  # K = (N * p) + intercepts/trends
+  A_draws <- posterior_obj$posterior$A
+  N <- dim(A_draws)[1]
+  
+  apply(A_draws, 3, function(A_mat) {
+    # Extract only VAR lag parameters (first N*p columns)
+    A_lags <- A_mat[, 1:(N * p)]
+    
+    # Construct Companion Matrix
+    if (p == 1) {
+      companion <- A_lags
+    } else {
+      top_block <- A_lags
+      bottom_block <- cbind(diag(N * (p - 1)), matrix(0, nrow = N * (p - 1), ncol = N))
+      companion <- rbind(top_block, bottom_block)
+    }
+    
+    # Return maximum absolute eigenvalue
+    max(abs(eigen(companion, only.values = TRUE)$values))
+  })
+}
+
+
+
+
+
 #============================================================================#
 #                     [4] FUNCTIONS FOR IRF
 #============================================================================#

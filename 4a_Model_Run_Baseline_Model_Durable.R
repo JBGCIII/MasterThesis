@@ -89,22 +89,22 @@ for (h in 1:3) {
 #parameters of the Nth equation to the white noise process, otherwise to random walk."
 is_stationary <- c(  
   # Domestic Variables (9)
-  TRUE,  # gdp_se_log (Non-Stationary I(1))
-  TRUE, # unemployment_rate (Non-Stationary I(1)
-  TRUE,  # cpi_log (Non-Stationary I(1))
-  TRUE,  # policy_rate (Non-Stationary I(1))
-  TRUE,  # target_cons [cons_durable_log / cons_durable_log] (Non-Stationary I(1))
-  TRUE,  # debt_to_asset_ratio (Non-Stationary I(1))
-  TRUE,  # dsr_value (Non-Stationary / Conflicting I(1))
-  TRUE,  # liquid_asset_to_income_ratio (Non-Stationary I(1))
-  TRUE   # saving_rate (Non-Stationary I(1))
+  FALSE,  # gdp_se_log (Non-Stationary I(1))
+  FALSE, # unemployment_rate (Non-Stationary I(1)
+  FALSE,  # cpi_log (Non-Stationary I(1))
+  FALSE,  # policy_rate (Non-Stationary I(1))
+  FALSE,  # target_cons [cons_durable_log / cons_durable_log] (Non-Stationary I(1))
+  FALSE,  # debt_to_asset_ratio (Non-Stationary I(1))
+  FALSE,  # dsr_value (Non-Stationary / Conflicting I(1))
+  FALSE,  # liquid_asset_to_income_ratio (Non-Stationary I(1))
+  FALSE   # saving_rate (Non-Stationary I(1))
 )
 
 #=============================================================================#
 #                   [3] MODEL SPECIFICATION AT DIFFERENT LAGS
 
 raw_covid_idx <- which(bvar_data$quarter == "2020Q2")
-
+set.seed(12345)
 #------------------------------------------------------------------------------#
 #                                 Model 1 (p = 1)
 #------------------------------------------------------------------------------#
@@ -119,7 +119,7 @@ spec_baseline_one_durable <- specify_bsvarSIGN$new(
   hyper_delta  = TRUE,
   hyper_psi    = FALSE,
   hyper_covid  = raw_covid_idx -1,   # Lenza & Primiceri scaling
-  mc.cores     = 1
+  mc.cores     = 5
 )
 
 #------------------------------------------------------------------------------#
@@ -136,7 +136,7 @@ spec_baseline_two_durable <- specify_bsvarSIGN$new(
   hyper_delta  = TRUE,
   hyper_psi    = FALSE,
   hyper_covid  = raw_covid_idx - 2,   # Lenza & Primiceri scaling
-  mc.cores     = 1
+  mc.cores     = 5
 )
 
 #------------------------------------------------------------------------------#
@@ -153,7 +153,7 @@ spec_baseline_three_durable <- specify_bsvarSIGN$new(
   hyper_delta  = TRUE,
   hyper_psi    = FALSE,
   hyper_covid  = raw_covid_idx - 3,   # Lenza & Primiceri scaling
-  mc.cores     = 1
+  mc.cores     = 5
 )
 
 
@@ -171,7 +171,7 @@ spec_baseline_four_durable <- specify_bsvarSIGN$new(
   hyper_delta  = TRUE,
   hyper_psi    = FALSE,
   hyper_covid  = raw_covid_idx - 4,   # Lenza & Primiceri scaling
-  mc.cores     = 1
+  mc.cores     = 5
 )
 
 
@@ -189,7 +189,7 @@ spec_baseline_five_durable <- specify_bsvarSIGN$new(
   hyper_delta  = TRUE,
   hyper_psi    = FALSE,
   hyper_covid  = raw_covid_idx - 5,   # Lenza & Primiceri scaling
-  mc.cores     = 1
+  mc.cores     = 5
 )
 #=============================================================================#
 #                          [4]  ESTIMATE HYPER-PARAMETER
@@ -226,7 +226,7 @@ saveRDS(estimate_baseline_durable_5, file = "3_Model_Output/Model_Baseline/Durab
 
 
 #=============================================================================#
-#                          [6]  SAVE ESTIMATED MODELS
+#                          [7]   STABILITY DIAGNOSTIC
 #=============================================================================#
 
 ev_one    <- check_posterior_stability(estimate_baseline_durable_1, p = 1)
@@ -236,17 +236,37 @@ ev_four <- check_posterior_stability(estimate_baseline_durable_4, p = 4)
 ev_five  <- check_posterior_stability(estimate_baseline_durable_5, p = 5)
 
 
-# Create a summary data frame of stability percentages across models
-stability_summary <- data.frame(
-  Model = c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+stability_diagnostics <- data.frame(
+  Model = paste0("Model ", 1:5),
   Pct_Stable = c(
-    mean(ev_one < 1.0) * 100,
-    mean(ev_two < 1.0) * 100,
-    mean(ev_three < 1.0) * 100,
-    mean(ev_four < 1.0) * 100,
-    mean(ev_five < 1.0) * 100
+    mean(ev_one < 1) * 100,
+    mean(ev_two < 1) * 100,
+    mean(ev_three < 1) * 100,
+    mean(ev_four < 1) * 100,
+    mean(ev_five < 1) * 100
+  ),
+  Median_Rho = c(
+    median(ev_one),
+    median(ev_two),
+    median(ev_three),
+    median(ev_four),
+    median(ev_five)
+  ),
+  P95_Rho = c(
+    quantile(ev_one, .95),
+    quantile(ev_two, .95),
+    quantile(ev_three, .95),
+    quantile(ev_four, .95),
+    quantile(ev_five, .95)
+  ),
+  Max_Rho = c(
+    max(ev_one),
+    max(ev_two),
+    max(ev_three),
+    max(ev_four),
+    max(ev_five)
   )
 )
 
 # Export to CSV (row.names = FALSE removes the 1,2,3... index column)
-write.csv(stability_summary, file = "3_Model_Output/Model_Baseline/Durable/posterior_stability_summary.csv", row.names = FALSE)
+write.csv(stability_diagnostics, file = "3_Model_Output/Model_Baseline/Durable/posterior_stability_summary.csv", row.names = FALSE)

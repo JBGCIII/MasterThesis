@@ -1,5 +1,5 @@
 ###############################################################################
-############################# CONSUMPTION HABITUAL ############################
+############################# CONSUMPTION DURABLE ############################
 ###############################################################################
 #                               [1] MODEL SET UP
 # 1. Load up data
@@ -24,7 +24,7 @@ domestic_cols <- c(
   "unemployment_rate",
   "cpi_log",
   "policy_rate",
-  "cons_habitual_log",
+  "cons_durable_log",
   "debt_to_asset_ratio",
   "dsr_value",
   "liquid_asset_to_income_ratio",
@@ -47,7 +47,7 @@ gdp_idx <- N_for + which(domestic_cols == "gdp_se_log")
 unemp_idx <- N_for + which(domestic_cols == "unemployment_rate")
 cpi_idx <- N_for + which(domestic_cols == "cpi_log")
 policy_idx <- N_for + which(domestic_cols == "policy_rate")
-cons_idx <- N_for + which(domestic_cols == "cons_habitual_log")
+cons_idx <- N_for + which(domestic_cols == "cons_durable_log")
 dta_idx <- N_for + which(domestic_cols == "debt_to_asset_ratio")
 dsr_idx <- N_for + which(domestic_cols == "dsr_value")
 liquid_idx <- N_for + which(
@@ -231,34 +231,34 @@ spec_foreign_five$estimate_hyper(S = 5000, burn_in = 1000)
 #=============================================================================#
 #                          [5]  RUN MODEL
 
-estimate_foreign_habitual_1 <- estimate(spec_foreign_one, S = 4000, thin = 1)
-estimate_foreign_habitual_2 <- estimate(spec_foreign_two, S = 4000, thin = 1)
-estimate_foreign_habitual_3 <- estimate(spec_foreign_three, S = 4000, thin = 1)
-estimate_foreign_habitual_4 <- estimate(spec_foreign_four, S = 4000, thin = 1)
-estimate_foreign_habitual_5 <- estimate(spec_foreign_five, S = 4000, thin = 1)
+estimate_foreign_durable_1 <- estimate(spec_foreign_one, S = 4000, thin = 1)
+estimate_foreign_durable_2 <- estimate(spec_foreign_two, S = 4000, thin = 1)
+estimate_foreign_durable_3 <- estimate(spec_foreign_three, S = 4000, thin = 1)
+estimate_foreign_durable_4 <- estimate(spec_foreign_four, S = 4000, thin = 1)
+estimate_foreign_durable_5 <- estimate(spec_foreign_five, S = 4000, thin = 1)
 
 
 #=============================================================================#
 #                          [6]  SAVE ESTIMATED MODELS
 
-dir.create("3_Model_Output/Model_Foreign/Habitual", recursive = TRUE, showWarnings = FALSE)
+dir.create("3_Model_Output/Model_Foreign/Durable", recursive = TRUE, showWarnings = FALSE)
 
 
-saveRDS(estimate_foreign_habitual_1, file = "3_Model_Output/Model_Foreign/Habitual/baseline_habitual_p1.rds")
-saveRDS(estimate_foreign_habitual_2, file = "3_Model_Output/Model_Foreign/Habitual/baseline_habitual_p2.rds")
-saveRDS(estimate_foreign_habitual_3, file = "3_Model_Output/Model_Foreign/Habitual/baseline_habitual_p3.rds")
-saveRDS(estimate_foreign_habitual_4, file = "3_Model_Output/Model_Foreign/Habitual/baseline_habitual_p4.rds")
-saveRDS(estimate_foreign_habitual_5, file = "3_Model_Output/Model_Foreign/Habitual/baseline_habitual_p5.rds")
+saveRDS(estimate_foreign_durable_1, file = "3_Model_Output/Model_Foreign/Durable/baseline_durable_p1.rds")
+saveRDS(estimate_foreign_durable_2, file = "3_Model_Output/Model_Foreign/Durable/baseline_durable_p2.rds")
+saveRDS(estimate_foreign_durable_3, file = "3_Model_Output/Model_Foreign/Durable/baseline_durable_p3.rds")
+saveRDS(estimate_foreign_durable_4, file = "3_Model_Output/Model_Foreign/Durable/baseline_durable_p4.rds")
+saveRDS(estimate_foreign_durable_5, file = "3_Model_Output/Model_Foreign/Durable/baseline_durable_p5.rds")
 
 
 #=============================================================================#
 #                          [6]   STABILITY DIAGNOSTIC
 
-ev_one    <- check_posterior_stability(estimate_foreign_habitual_1, p = 1)
-ev_two <- check_posterior_stability(estimate_foreign_habitual_2, p = 2)
-ev_three   <- check_posterior_stability(estimate_foreign_habitual_3, p = 3)
-ev_four <- check_posterior_stability(estimate_foreign_habitual_4, p = 4)
-ev_five  <- check_posterior_stability(estimate_foreign_habitual_5, p = 5)
+ev_one    <- check_posterior_stability(estimate_foreign_durable_1, p = 1)
+ev_two <- check_posterior_stability(estimate_foreign_durable_2, p = 2)
+ev_three   <- check_posterior_stability(estimate_foreign_durable_3, p = 3)
+ev_four <- check_posterior_stability(estimate_foreign_durable_4, p = 4)
+ev_five  <- check_posterior_stability(estimate_foreign_durable_5, p = 5)
 
 
 
@@ -295,7 +295,7 @@ stability_diagnostics <- data.frame(
 )
 
 # Export to CSV (row.names = FALSE removes the 1,2,3... index column)
-write.csv(stability_diagnostics, file = "3_Model_Output/Model_Foreign/Habitual/posterior_stability_summary.csv", row.names = FALSE)
+write.csv(stability_diagnostics, file = "3_Model_Output/Model_Foreign/Durable/posterior_stability_summary.csv", row.names = FALSE)
 
 
 

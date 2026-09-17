@@ -66,7 +66,7 @@ consumption_processed <- read_csv("0_Raw_Data/2_SCB_household_consumption_catego
 write_csv(consumption_processed, "1_Processed_Data/Data_Set_Columns/2_consumption_categories_log.csv")
 
 # ==============================================================================
-# [4-5] Household Financials
+# [3-5] Household Financials
 # ==============================================================================
 debt_to_real_asset     <- read_csv("1_Processed_Data/Data_Set_Columns/3-5_B_debt_to_real_asset.csv") %>% mutate(quarter = to_yyyyq(quarter))
 debt_service_ratio     <- read_csv("1_Processed_Data/Data_Set_Columns/3-5_A_debt_service_ratio.csv") %>% rename_with(~ "quarter", 1) %>% mutate(quarter = to_yyyyq(quarter))
@@ -87,6 +87,21 @@ household_indicators <- read_csv("0_Raw_Data/3_SCB_household_sector_a_indicators
   mutate(quarter = to_yyyyq(quarter))
 
 write_csv(household_indicators, "1_Processed_Data/Data_Set_Columns/3-5_D_Savings_and_DTI.csv")
+
+# ==============================================================================
+# [8] KIX GDP (Preserving QoQ Growth, Log Diff, and Cumulative Log Level)
+# ==============================================================================
+kix_gdp_log <- read_csv("1_Processed_Data/Data_Set_Columns/8_b_KIX_gdp.csv") %>%
+  dplyr::select(quarter, kix_gdp_qoq_pct = KIX_GDP_growth_qoq) %>%
+  mutate(quarter = to_yyyyq(quarter)) %>%
+  arrange(quarter) %>%
+  mutate(
+    kix_gdp_log_diff = log(1 + kix_gdp_qoq_pct / 100),
+    kix_gdp_log      = log(100) + cumsum(coalesce(kix_gdp_log_diff, 0))
+  )
+
+write_csv(kix_gdp_log, "1_Processed_Data/Data_Set_Columns/8_c_KIX_gdp_log.csv")
+
 
 # ==============================================================================
 # [9] Policy Rate
@@ -138,14 +153,38 @@ kix_cpi_quarterly <- read_csv(
 ) %>%
   mutate(
     quarter = to_yyyyq(quarter),
-    KIX_CPI_inflation_qoq = as.numeric(KIX_CPI_inflation_qoq)
+    kix_cpi_inflation_qoq = as.numeric(KIX_CPI_inflation_qoq)
   ) %>%
   arrange(quarter) %>%
   mutate(
-    kix_cpi_log_diff = log(1 + KIX_CPI_inflation_qoq / 100),
-    kix_cpi_log      = log(100) +
-                       cumsum(coalesce(kix_cpi_log_diff, 0))
-  ) %>%
+    kix_cpi_log_diff = log(1 + kix_cpi_inflation_qoq / 100),
+    kix_cpi_log = log(100) +
+                  cumsum(coalesce(kix_cpi_log_diff, 0))
+  )
+  last_inflation <- tail(
+  kix_cpi_quarterly$kix_cpi_inflation_qoq,
+  1
+)
+last_log <- tail(
+  kix_cpi_quarterly$kix_cpi_log,
+  1
+)
+future_quarters <- tibble(
+  quarter = to_yyyyq(
+    c("2025Q1", "2025Q2", "2025Q3", "2025Q4")
+  ),
+  kix_cpi_inflation_qoq = last_inflation
+) %>%
+  mutate(
+    kix_cpi_log_diff = log(1 + kix_cpi_inflation_qoq / 100),
+    kix_cpi_log = last_log +
+                  cumsum(kix_cpi_log_diff)
+  )
+
+  kix_cpi_quarterly <- bind_rows(
+  kix_cpi_quarterly,
+  future_quarters
+) %>%
   select(
     quarter,
     KIX_CPI_inflation_qoq,
@@ -155,8 +194,43 @@ kix_cpi_quarterly <- read_csv(
 
 write_csv(
   kix_cpi_quarterly,
-  "1_Processed_Data/Data_Set_Columns/7_b_foreign_inflation_log.csv"
+  "1_Processed_Data/Data_Set_Columns/7_b_foreign_inflation_logtes.csv"
 )
+
+
+# ==============================================================================
+#                   [10a] KIX Exchange Rate Index
+# ==============================================================================
+# Convert daily KIX nominal exchange-rate index to quarterly frequency.
+# The daily index is averaged within each quarter first.
+# The quarterly nominal exchange-rate index is then expressed in logs.
+
+kix_nominal_quarterly <- read_csv(
+  "0_Raw_Data/10_KIX_Exchange_Rate_Index.csv"
+) %>%
+  mutate(
+    date = as.Date(date),
+    quarter = paste0(
+      format(date, "%Y"),
+      "Q",
+      ceiling(as.numeric(format(date, "%m")) / 3)
+    )
+  ) %>%
+  group_by(quarter) %>%
+  summarise(
+    kix_nominal_index = mean(value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    quarter = to_yyyyq(quarter),
+    kix_nominal_log = log(kix_nominal_index)
+  ) %>%
+  arrange(quarter)
+
+
+write_csv( kix_nominal_quarterly,
+ "1_Processed_Data/Data_Set_Columns/10_kix_nominal_exchange_rates.csv" )
+
 
 # ==============================================================================
 #                           [10] Real Exchange Rate
@@ -170,12 +244,9 @@ write_csv(
 #   p_t   = log Swedish CPI
 # A rise in q therefore corresponds to a real depreciation of SEK
 # under this exchange-rate convention.
-kix_real_quarterly <- read_csv(
-  "1_Processed_Data/Data_Set_Columns/10_kix_exchange_rates.csv"
-) %>%
-  mutate(
-    quarter = to_yyyyq(quarter)
-  ) %>%
+
+
+kix_real_quarterly <- kix_nominal_quarterly %>%
   left_join(
     dplyr::select(
       cpi_quarterly,
@@ -193,16 +264,32 @@ kix_real_quarterly <- read_csv(
     by = "quarter"
   ) %>%
   mutate(
+    # Real exchange rate:
+    #
+    # q_t = s_t + p*_t - p_t
+    #
+    # where:
+    # s_t   = log nominal KIX exchange-rate index
+    # p*_t  = log KIX foreign price level
+    # p_t   = log Swedish CPI
+    #
     kix_real_log =
       kix_nominal_log +
       kix_cpi_log -
       cpi_log
   )
 
+
+# ------------------------------------------------------------------
+# Save
+# ------------------------------------------------------------------
+
 write_csv(
   kix_real_quarterly,
-  "1_Processed_Data/Data_Set_Columns/10_kix_exchange_rates.csv"
+  "1_Processed_Data/Data_Set_Columns/10_kix_real_exchange_rates.csv"
 )
+
+
 
 # ==============================================================================
 # [12-15] Labor, Energy, Global Rates, Confidence, Housing
@@ -255,7 +342,7 @@ write_csv(real_house_price_quarterly, "1_Processed_Data/Data_Set_Columns/6_real_
 # Full Pre-Inspection Master Join (Retains Raw & Transformed Side-by-Side)
 # ========================================================================
 master_bsvar_data <- gdp_sweden_log %>%
-  full_join(KIX_GDP_log_level, by = "quarter") %>%
+  full_join(kix_gdp_log, by = "quarter") %>%
   full_join(cpi_quarterly, by = "quarter") %>%
   full_join(kix_cpi_quarterly, by = "quarter") %>%
   full_join(policy_rate_quarterly, by = "quarter") %>%
@@ -274,13 +361,14 @@ master_bsvar_data <- gdp_sweden_log %>%
 # Filter directly using standard string comparison
 # (Since "YYYYQ#" formatted strings sort naturally in chronological order)
 final_output <- master_bsvar_data %>%
-  filter(quarter >= "1996Q1" & quarter <= "2024Q4") %>%
+  filter(quarter >= "1996Q1" & quarter <= "2025Q4") %>%
   arrange(quarter)
 
-write_csv(final_output, "1_Processed_Data/1_a_pre_inspection_data.csv")
+write_csv(final_output, "1_Processed_Data/1_a_pre_inspection_dataset.csv")
 
 # 1. Load Pre-Inspection Output
-pre_inspection_data <- read_csv("1_Processed_Data/1_a_pre_inspection_data.csv")
+pre_inspection_data <- read_csv("1_Processed_Data/1_a_pre_inspection_dataset.csv")
+
 
 
 # 2. Extract and resolve duplicate CPI/HICP columns
@@ -319,5 +407,5 @@ inspection_data <- pre_inspection_data %>%
 # 3. Export Clean Estimation Vector
 write_csv(
   inspection_data, 
-  "1d_pre_inspection_data_narrow.csv"
+  "1d_pre_inspection_data_narrowed.csv"
 )
