@@ -17,7 +17,7 @@ model_ts <- ts(
 domestic_cols <- c(
   "gdp_se_log", "unemployment_rate", "cpi_log", "policy_rate", "cons_durable_log",
   "debt_to_asset_ratio", "dsr_value", "liquid_asset_to_income_ratio",
-  "saving_rate"
+  "saving_rate",  "kix_real_log"
 )
 domestic_data <- as.matrix(model_ts[, domestic_cols])
 
@@ -34,6 +34,9 @@ dta_idx <- "debt_to_asset_ratio"
 dsr_idx <- "dsr_value"
 liquid_idx <- "liquid_asset_to_income_ratio"
 saving_idx <- "saving_rate"
+kix_idx <- "kix_real_log"
+
+
 
 #----------------------------------------------------------------------------#
 c(
@@ -45,7 +48,8 @@ c(
   dta = dta_idx,
   dsr = dsr_idx,
   liquid = liquid_idx,
-  saving = saving_idx
+  saving = saving_idx,
+  exchange_rate = kix_idx
 )
 
 #=============================================================================#
@@ -87,17 +91,17 @@ for (h in 1:3) {
 # Quoted directly from package
 #"Stationary an N logical vector - its element set to FALSE sets the prior mean for the autoregressive
 #parameters of the Nth equation to the white noise process, otherwise to random walk."
-is_stationary <- c(  
-  # Domestic Variables (9)
-  TRUE,  # gdp_se_log (Non-Stationary I(1))
-  TRUE, # unemployment_rate (Non-Stationary I(1)
-  TRUE,  # cpi_log (Non-Stationary I(1))
-  TRUE,  # policy_rate (Non-Stationary I(1))
-  TRUE,  # target_cons [cons_durable_log / cons_durable_log] (Non-Stationary I(1))
-  TRUE,  # debt_to_asset_ratio (Non-Stationary I(1))
-  TRUE,  # dsr_value (Non-Stationary / Conflicting I(1))
-  TRUE,  # liquid_asset_to_income_ratio (Non-Stationary I(1))
-  TRUE   # saving_rate (Non-Stationary I(1))
+is_stationary <- c(
+  FALSE,  # gdp_se_log
+  FALSE,  # unemployment_rate
+  FALSE,  # cpi_log
+  FALSE,  # policy_rate
+  FALSE,  # cons_durable_log
+  FALSE,  # debt_to_asset_ratio
+  FALSE,  # dsr_value
+  FALSE,  # liquid_asset_to_income_ratio
+  FALSE,  # saving_rate
+  FALSE   # kix_real_log
 )
 
 #=============================================================================#
@@ -202,12 +206,43 @@ ev_two <- check_posterior_stability(estimate_narrative_durable_2, p = 2)
 
 # Create a summary data frame of stability percentages across models
 stability_summary <- data.frame(
-  Model = c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+  Model = c("Model 1", "Model 2"),
   Pct_Stable = c(
     mean(ev_one < 1.0) * 100,
-    mean(ev_two < 1.0) * 100,
+    mean(ev_two < 1.0) * 100
   )
 )
 
 # Export to CSV (row.names = FALSE removes the 1,2,3... index column)
-write.csv(stability_summary, file = "3_Model_Output/Model_narrative/Durable/posterior_stability_summary.csv", row.names = FALSE)
+write.csv(stability_diagnostics, file = "3_Model_Output/Model_narrative/Durable/posterior_stability_summary.csv", row.names = FALSE)
+
+
+
+stability_diagnostics <- data.frame(
+  Model = paste0("Model ", 1:2),
+  Pct_Stable = c(
+    mean(ev_one < 1) * 100,
+    mean(ev_two < 1) * 100
+  ),
+  Median_Rho = c(
+    median(ev_one),
+    median(ev_two)
+  ),
+  P95_Rho = c(
+    quantile(ev_one, .95),
+    quantile(ev_two, .95)
+  ),
+  Max_Rho = c(
+    max(ev_one),
+    max(ev_two)
+  )
+)
+
+
+
+
+
+
+
+
+

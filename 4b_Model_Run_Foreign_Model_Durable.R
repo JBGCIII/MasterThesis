@@ -16,7 +16,7 @@ model_ts <- ts(
 foreign_cols <- c(
   "fed_funds_rate",
   "kix_gdp_log",
-  "kix_real_log"
+  "kix_cpi"
 )
 
 domestic_cols <- c(
@@ -28,7 +28,8 @@ domestic_cols <- c(
   "debt_to_asset_ratio",
   "dsr_value",
   "liquid_asset_to_income_ratio",
-  "saving_rate"
+  "saving_rate",
+  "kix_real_log"
 )
 
 #----------------------------------------------------------------------------#
@@ -50,10 +51,10 @@ policy_idx <- N_for + which(domestic_cols == "policy_rate")
 cons_idx <- N_for + which(domestic_cols == "cons_durable_log")
 dta_idx <- N_for + which(domestic_cols == "debt_to_asset_ratio")
 dsr_idx <- N_for + which(domestic_cols == "dsr_value")
-liquid_idx <- N_for + which(
-  domestic_cols == "liquid_asset_to_income_ratio"
-)
+liquid_idx <- N_for + which(domestic_cols == "liquid_asset_to_income_ratio")
 saving_idx <- N_for + which(domestic_cols == "saving_rate")
+kix_idx <- N_for + which(domestic_cols == "kix_real_log")
+
 
 #----------------------------------------------------------------------------#
 c(
@@ -65,7 +66,8 @@ c(
   dta = dta_idx,
   dsr = dsr_idx,
   liquid = liquid_idx,
-  saving = saving_idx
+  saving = saving_idx,
+  exchange_rate = kix_idx
 )
 
 #=============================================================================#
@@ -79,8 +81,9 @@ sign_irf <- array(
 )
 
 #----------------------------------------------------------------------------#
-mp_shock    <- 1  # or "policy_rate"
-macro_shock <- 2
+mp_shock <- policy_idx
+macro_shock <- gdp_idx
+
 
 # Constrain restrictions for horizons 1 through 3 (Quarters 0, 1, 2)
 for (h in 1:3) {
@@ -95,6 +98,7 @@ for (h in 1:3) {
   sign_irf[unemp_idx,  macro_shock, h] <-  1
   sign_irf[policy_idx, macro_shock, h] <- -1  # Endogenous rate cut response
 }
+
 
 #----------------------------------------------------------------------------#
 is_stationary <- c(
@@ -112,13 +116,9 @@ is_stationary <- c(
   FALSE,  # debt_to_asset_ratio (Non-Stationary I(1))
   FALSE,  # dsr_value (Non-Stationary / Conflicting I(1))
   FALSE,  # liquid_asset_to_income_ratio (Non-Stationary I(1))
-  FALSE   # saving_rate (Non-Stationary I(1))
+  FALSE,   # saving_rate (Non-Stationary I(1))
+  FALSE
 )
-
-# quoted directly from package
-#"stationary an N logical vector - its element set to FALSE sets the prior mean for the autoregressive
-#parameters of the Nth equation to the white noise process, otherwise to random walk."
-
 
 #=============================================================================#
 #                 [3] MODEL SPECIFICATION AT DIFFERENT LAGS
@@ -295,176 +295,7 @@ stability_diagnostics <- data.frame(
 )
 
 # Export to CSV (row.names = FALSE removes the 1,2,3... index column)
-write.csv(stability_diagnostics, file = "3_Model_Output/Model_Foreign/Durable/posterior_stability_summary.csv", row.names = FALSE)
+write.csv(stability_diagnostics, file = "Test.csv", row.names = FALSE)
 
 
 
-
-
-class(spec_foreign_one)
-
-names(spec_foreign_one)
-
-str(spec_foreign_one, max.level = 2)
-
-
-spec_foreign_one$data_matrices
-
-str(spec_foreign_one$data_matrices, max.level = 3)
-
-
-names(spec_foreign_one$data_matrices)
-
-
-
-dim(spec_foreign_one$data_matrices$Y)
-dim(spec_foreign_one$data_matrices$X)
-
-head(spec_foreign_one$data_matrices$Y)
-head(spec_foreign_one$data_matrices$X)
-
-
-head(spec_foreign_one$data_matrices$Y)
-head(spec_foreign_one$data_matrices$X)
-
-
-
-dm <- spec_foreign_one$get_data_matrices()
-
-dim(dm$Y)
-dim(dm$X)
-
-colnames(dm$X)
-colnames(dm$Y)
-
-
-head(dm$X)
-head(dm$Y)
-
-
-
-
-
-
-# Inspect the prior object
-str(spec_foreign_one$prior, max.level = 3)
-
-# Inspect starting values
-str(spec_foreign_one$starting_values, max.level = 3)
-
-# Inspect identification
-str(spec_foreign_one$identification, max.level = 3)
-
-
-
-
-head(dm$X)
-
-foreign.fed_funds_rate
-foreign.kix_gdp_log
-foreign.kix_real_log
-data.gdp_se_log
-data.unemployment_rate
-...
-
-
-A_prior <- spec_foreign_one$prior$A
-
-dim(A_prior)
-length(A_prior)
-
-
-
-S_prior <- spec_foreign_one$prior$S
-V_prior <- spec_foreign_one$prior$V
-
-dim(S_prior)
-dim(V_prior)
-
-
-A_prior_mat <- matrix(
-  spec_foreign_one$prior$A,
-  nrow = 12,
-  byrow = FALSE
-)
-
-A_prior_mat
-
-
-
-A_prior_mat <- matrix(
-  spec_foreign_one$prior$A,
-  nrow = 12,
-  byrow = FALSE
-)
-
-A_prior_mat
-
-
-
-A_prior_mat[1:3, 1:3]   # foreign <- foreign
-A_prior_mat[1:3, 4:12]  # foreign <- domestic
-A_prior_mat[4:12, 1:3]  # domestic <- foreign
-A_prior_mat[4:12, 4:12] # domestic <- domestic
-
-
-
-A_draws <- estimate_foreign_durable_1$posterior$A
-
-dim(A_draws)
-
-foreign_from_domestic <- A_draws[1:3, 4:12, ]
-
-range(foreign_from_domestic)
-
-all(foreign_from_domestic == 0)
-
-
-
-
-domestic_from_foreign <- A_draws[4:12, 1:3, ]
-
-range(domestic_from_foreign)
-all(domestic_from_foreign == 0)
-
-
-spec_foreign_one$prior$lambda
-
-
-spec_foreign_one$prior$lambda
-spec_foreign_one$prior$lambda.scale
-spec_foreign_one$prior$lambda.shape
-
-
-
-
-
-
-
-
-
-
-spec_test <- specify_bsvarSIGN$new(
-  data         = domestic_data,
-  p            = 1,
-  sign_irf     = sign_irf,
-  foreign      = foreign_data,
-  stationary   = is_stationary,
-  hyper_lambda = FALSE,
-  hyper_mu     = TRUE,
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 1,
-  mc.cores     = n_cores
-)
-
-spec_test$prior$lambda
-str(spec_test$prior, max.level = 1)
-
-
-
-spec_test$prior$initialize
-
-spec_test$prior$get_prior
-
-spec_test$prior$get_prior()
