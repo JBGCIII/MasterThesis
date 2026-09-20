@@ -264,6 +264,15 @@ ev_five  <- check_posterior_stability(estimate_foreign_habitual_5, p = 5)
 
 
 
+dim(estimate_foreign_habitual_1$posterior$B)
+dim(estimate_foreign_habitual_2$posterior$B)
+dim(estimate_foreign_habitual_3$posterior$B)
+dim(estimate_foreign_habitual_4$posterior$B)
+dim(estimate_foreign_habitual_5$posterior$B)
+
+
+
+
 stability_diagnostics <- data.frame(
   Model = paste0("Model ", 1:5),
   Pct_Stable = c(
@@ -304,3 +313,12 @@ write.csv(stability_diagnostics, file = "3_Model_Output/Model_Foreign/Habitual/p
 
 
 
+
+
+# 1. Check the dimensions of the structural matrix or posterior draws (N x N x draws)
+dim(estimate_foreign_habitual_1$posterior$B)
+
+# 2. Extract column/variable names directly from the data matrix stored in the model
+colnames(estimate_foreign_habitual_1$last_draw$data$Y)
+
+length(variables_habituals)

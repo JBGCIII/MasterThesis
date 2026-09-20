@@ -17,7 +17,7 @@ model_ts <- ts(
 domestic_cols <- c(
   "gdp_se_log", "unemployment_rate", "cpi_log", "policy_rate", "cons_habitual_log",
   "debt_to_asset_ratio", "dsr_value", "liquid_asset_to_income_ratio",
-  "saving_rate"
+  "saving_rate", "kix_real_log"
 )
 domestic_data <- as.matrix(model_ts[, domestic_cols])
 
@@ -34,6 +34,8 @@ dta_idx <- "debt_to_asset_ratio"
 dsr_idx <- "dsr_value"
 liquid_idx <- "liquid_asset_to_income_ratio"
 saving_idx <- "saving_rate"
+kix_idx <- "kix_real_log"
+
 
 #----------------------------------------------------------------------------#
 c(
@@ -45,7 +47,8 @@ c(
   dta = dta_idx,
   dsr = dsr_idx,
   liquid = liquid_idx,
-  saving = saving_idx
+  saving = saving_idx,
+  exchange_rate = kix_idx
 )
 
 #=============================================================================#
@@ -89,15 +92,16 @@ for (h in 1:3) {
 #parameters of the Nth equation to the white noise process, otherwise to random walk."
 is_stationary <- c(  
   # Domestic Variables (9)
-  TRUE,  # gdp_se_log (Non-Stationary I(1))
-  TRUE, # unemployment_rate (Non-Stationary I(1)
-  TRUE,  # cpi_log (Non-Stationary I(1))
-  TRUE,  # policy_rate (Non-Stationary I(1))
-  TRUE,  # target_cons [cons_durable_log / cons_durable_log] (Non-Stationary I(1))
-  TRUE,  # debt_to_asset_ratio (Non-Stationary I(1))
-  TRUE,  # dsr_value (Non-Stationary / Conflicting I(1))
-  TRUE,  # liquid_asset_to_income_ratio (Non-Stationary I(1))
-  TRUE   # saving_rate (Non-Stationary I(1))
+  FALSE,  # gdp_se_log (Non-Stationary I(1))
+  FALSE, # unemployment_rate (Non-Stationary I(1)
+  FALSE,  # cpi_log (Non-Stationary I(1))
+  FALSE,  # policy_rate (Non-Stationary I(1))
+  FALSE,  # target_cons [cons_durable_log / cons_durable_log] (Non-Stationary I(1))
+  FALSE,  # debt_to_asset_ratio (Non-Stationary I(1))
+  FALSE,  # dsr_value (Non-Stationary / Conflicting I(1))
+  FALSE,  # liquid_asset_to_income_ratio (Non-Stationary I(1))
+  FALSE,   # saving_rate (Non-Stationary I(1))
+  FALSE
 )
 
 #=============================================================================#
@@ -137,7 +141,7 @@ set.seed(12345)
 #------------------------------------------------------------------------------#
 #                                 Model 1 (p = 1)
 #------------------------------------------------------------------------------#
-spec_narrative_one_durable <- specify_bsvarSIGN$new(
+spec_narrative_one_habitual <- specify_bsvarSIGN$new(
   data         = domestic_data,          
   p            = 1,                     
   sign_irf     = sign_irf,               
@@ -154,7 +158,7 @@ spec_narrative_one_durable <- specify_bsvarSIGN$new(
 #------------------------------------------------------------------------------#
 #                                 Model 2 (p = 2)
 #------------------------------------------------------------------------------#
-spec_narrative_two_durable <- specify_bsvarSIGN$new(
+spec_narrative_two_habitual <- specify_bsvarSIGN$new(
   data         = domestic_data,          
   p            = 2,                     
   sign_irf     = sign_irf,               
@@ -171,33 +175,31 @@ spec_narrative_two_durable <- specify_bsvarSIGN$new(
 #=============================================================================#
 #                          [4]  ESTIMATE HYPER-PARAMETER
 
-spec_narrative_one_durable$estimate_hyper(S = 5000, burn_in = 1000)
-spec_narrative_two_durable$estimate_hyper(S = 5000, burn_in = 1000)
+spec_narrative_one_habitual$estimate_hyper(S = 5000, burn_in = 1000)
+spec_narrative_two_habitual$estimate_hyper(S = 5000, burn_in = 1000)
 
 #=============================================================================#
 #                          [5]  RUN MODEL
 
-estimate_narrative_durable_1 <- estimate(spec_narrative_one_durable, S = 4000, thin = 1)
-
-# Model Run Start 21:49. End 02:04
-estimate_narrative_durable_2 <- estimate(spec_narrative_two_durable, S = 4000, thin = 1)
+estimate_narrative_habitual_1 <- estimate(spec_narrative_one_habitual, S = 4000, thin = 1)
+estimate_narrative_habitual_2 <- estimate(spec_narrative_two_habitual, S = 4000, thin = 1)
 
 #=============================================================================#
 #                          [6]  SAVE ESTIMATED MODELS
 #=============================================================================#
 
-dir.create("3_Model_Output/Model_Narrative/Durable", recursive = TRUE, showWarnings = FALSE)
+dir.create("3_Model_Output/Model_Narrative/Habitual", recursive = TRUE, showWarnings = FALSE)
 
 
-saveRDS(estimate_narrative_durable_1, file = "3_Model_Output/Model_Narrative/Durable/narrative_durable_p1.rds")
-saveRDS(estimate_narrative_durable_2, file = "3_Model_Output/Model_Narrative/Durable/narrative_durable_p2.rds")
+saveRDS(estimate_narrative_habitual_1, file = "3_Model_Output/Model_Narrative/Habitual/narrative_habitual_p1.rds")
+saveRDS(estimate_narrative_habitual_2, file = "3_Model_Output/Model_Narrative/Habitual/narrative_habitual_p2.rds")
 
 #=============================================================================#
 #                          [6]  SAVE ESTIMATED MODELS
 #=============================================================================#
 
-ev_one    <- check_posterior_stability(estimate_narrative_durable_1, p = 1)
-ev_two <- check_posterior_stability(estimate_narrative_durable_2, p = 2)
+ev_one    <- check_posterior_stability(estimate_narrative_habitual_1, p = 1)
+ev_two <- check_posterior_stability(estimate_narrative_habitual_2, p = 2)
 
 
 # Create a summary data frame of stability percentages across models
@@ -210,4 +212,4 @@ stability_summary <- data.frame(
 )
 
 # Export to CSV (row.names = FALSE removes the 1,2,3... index column)
-write.csv(stability_summary, file = "3_Model_Output/Model_narrative/Durable/posterior_stability_summary.csv", row.names = FALSE)
+write.csv(stability_summary, file = "3_Model_Output/Model_narrative/Habitual/posterior_stability_summary.csv", row.names = FALSE)

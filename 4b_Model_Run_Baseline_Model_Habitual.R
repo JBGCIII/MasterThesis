@@ -17,7 +17,7 @@ model_ts <- ts(
 domestic_cols <- c(
   "gdp_se_log", "unemployment_rate", "cpi_log", "policy_rate", "cons_habitual_log",
   "debt_to_asset_ratio", "dsr_value", "liquid_asset_to_income_ratio",
-  "saving_rate"
+  "saving_rate", "kix_real_log"
 )
 domestic_data <- as.matrix(model_ts[, domestic_cols])
 
@@ -34,6 +34,7 @@ dta_idx <- "debt_to_asset_ratio"
 dsr_idx <- "dsr_value"
 liquid_idx <- "liquid_asset_to_income_ratio"
 saving_idx <- "saving_rate"
+kix_idx <- "kix_real_log"
 
 #----------------------------------------------------------------------------#
 c(
@@ -45,7 +46,8 @@ c(
   dta = dta_idx,
   dsr = dsr_idx,
   liquid = liquid_idx,
-  saving = saving_idx
+  saving = saving_idx,
+  exchange_rate = kix_idx
 )
 
 #=============================================================================#
@@ -97,13 +99,15 @@ is_stationary <- c(
   FALSE,  # debt_to_asset_ratio (Non-Stationary I(1))
   FALSE,  # dsr_value (Non-Stationary / Conflicting I(1))
   FALSE,  # liquid_asset_to_income_ratio (Non-Stationary I(1))
-  FALSE   # saving_rate (Non-Stationary I(1))
+  FALSE,  # saving_rate (Non-Stationary I(1))
+  FALSE
 )
 
 #=============================================================================#
 #                   [3] MODEL SPECIFICATION AT DIFFERENT LAGS
 
 raw_covid_idx <- which(bvar_data$quarter == "2020Q2")
+n_cores <- max(1, parallel::detectCores() - 2)
 set.seed(12345)
 #------------------------------------------------------------------------------#
 #                                 Model 1 (p = 1)
@@ -119,7 +123,7 @@ spec_baseline_one_habitual <- specify_bsvarSIGN$new(
   hyper_delta  = TRUE,
   hyper_psi    = FALSE,
   hyper_covid  = raw_covid_idx -1,   # Lenza & Primiceri scaling
-  mc.cores     = 1
+  mc.cores     = n_cores
 )
 
 #------------------------------------------------------------------------------#
@@ -136,7 +140,7 @@ spec_baseline_two_habitual <- specify_bsvarSIGN$new(
   hyper_delta  = TRUE,
   hyper_psi    = FALSE,
   hyper_covid  = raw_covid_idx - 2,   # Lenza & Primiceri scaling
-  mc.cores     = 1
+  mc.cores     = n_cores
 )
 
 #------------------------------------------------------------------------------#
@@ -153,7 +157,7 @@ spec_baseline_three_habitual <- specify_bsvarSIGN$new(
   hyper_delta  = TRUE,
   hyper_psi    = FALSE,
   hyper_covid  = raw_covid_idx - 3,   # Lenza & Primiceri scaling
-  mc.cores     = 1
+  mc.cores     = n_cores
 )
 
 
@@ -171,7 +175,7 @@ spec_baseline_four_habitual <- specify_bsvarSIGN$new(
   hyper_delta  = TRUE,
   hyper_psi    = FALSE,
   hyper_covid  = raw_covid_idx - 4,   # Lenza & Primiceri scaling
-  mc.cores     = 1
+  mc.cores     = n_cores
 )
 
 
@@ -189,7 +193,7 @@ spec_baseline_five_habitual <- specify_bsvarSIGN$new(
   hyper_delta  = TRUE,
   hyper_psi    = FALSE,
   hyper_covid  = raw_covid_idx - 5,   # Lenza & Primiceri scaling
-  mc.cores     = 1
+  mc.cores     = n_cores
 )
 #=============================================================================#
 #                          [4]  ESTIMATE HYPER-PARAMETER
