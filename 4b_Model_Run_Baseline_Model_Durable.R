@@ -69,8 +69,8 @@ sign_irf <- array(
 
 #----------------------------------------------------------------------------#
 # Shocks 3
-mp_shock    <- 1  # or "policy_rate"
-macro_shock <- 2
+mp_shock    <- policy_idx  # or "policy_rate"
+macro_shock <- gdp_idx
 
 # Constrain restrictions for horizons 1 through 3 (Quarters 0, 1, 2)
 for (h in 1:3) {

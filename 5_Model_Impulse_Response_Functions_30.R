@@ -191,7 +191,7 @@ for (p in 1:5) {
 
   model <- readRDS(
     paste0(
-      "3_Model_Output/Model_Baseline/Habitual/baseline_habitual_p",
+      "3_Model_Output_Test/Model_Baseline/Habitual/baseline_habitual_p",
       p, ".rds"
     )
   )
@@ -200,9 +200,9 @@ for (p in 1:5) {
     model = model,
     variable_names = variables_habituals,
     output_dir = "4_Output_Analysis/Model_Baseline/Habitual",
-    filename = paste0("IRF_Baseline_Lag_", p, ".png"),
+    filename = paste0("Test_IRF_Baseline_Lag_", p, ".png"),
     horizon = 30,
-    shock_indices = c(1, 2),
+    shock_indices = c(4, 1),
     shock_labels = c(
       "Monetary Policy Shock",
       "Adverse Macro Shock"
@@ -228,7 +228,7 @@ for (p in 1:5) {
     summary,
     file.path(
       "4_Output_Analysis/Model_Baseline/Habitual",
-      paste0("IRF_Baseline_Lag_", p, "_Summary.csv")
+      paste0("Test_IRF_Baseline_Lag_", p, "_Summary.csv")
     ),
     row.names = FALSE
   )
@@ -394,7 +394,7 @@ for (p in 1:5) {
     summary,
     file.path(
       "4_Output_Analysis/Model_Foreign/Durable",
-      paste0("IRF_Foreign_Lag_", p, "_Summary.csv")
+      paste0("IRF_Baseline_Lag_", p, "_Summary.csv")
     ),
     row.names = FALSE
   )
