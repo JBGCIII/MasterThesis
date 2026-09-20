@@ -200,22 +200,14 @@ saveRDS(estimate_narrative_durable_2, file = "3_Model_Output/Model_Narrative/Dur
 #                          [6]  SAVE ESTIMATED MODELS
 #=============================================================================#
 
+
+estimate_narrative_durable_1 <- readRDS("3_Model_Output/Model_Narrative/Durable/narrative_durable_p1.rds")
+estimate_narrative_durable_2 <- readRDS("3_Model_Output/Model_Narrative/Durable/narrative_durable_p2.rds")
+
+
+
 ev_one    <- check_posterior_stability(estimate_narrative_durable_1, p = 1)
 ev_two <- check_posterior_stability(estimate_narrative_durable_2, p = 2)
-
-
-# Create a summary data frame of stability percentages across models
-stability_summary <- data.frame(
-  Model = c("Model 1", "Model 2"),
-  Pct_Stable = c(
-    mean(ev_one < 1.0) * 100,
-    mean(ev_two < 1.0) * 100
-  )
-)
-
-# Export to CSV (row.names = FALSE removes the 1,2,3... index column)
-write.csv(stability_diagnostics, file = "3_Model_Output/Model_narrative/Durable/posterior_stability_summary.csv", row.names = FALSE)
-
 
 
 stability_diagnostics <- data.frame(
@@ -238,6 +230,10 @@ stability_diagnostics <- data.frame(
   )
 )
 
+
+
+# Export to CSV (row.names = FALSE removes the 1,2,3... index column)
+write.csv(stability_diagnostics, file = "3_Model_Output/Model_narrative/Durable/posterior_stability_summary.csv", row.names = FALSE)
 
 
 

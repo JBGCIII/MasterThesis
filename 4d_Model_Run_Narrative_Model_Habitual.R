@@ -197,19 +197,31 @@ saveRDS(estimate_narrative_habitual_2, file = "3_Model_Output/Model_Narrative/Ha
 #=============================================================================#
 #                          [6]  SAVE ESTIMATED MODELS
 #=============================================================================#
-
 ev_one    <- check_posterior_stability(estimate_narrative_habitual_1, p = 1)
 ev_two <- check_posterior_stability(estimate_narrative_habitual_2, p = 2)
 
 
-# Create a summary data frame of stability percentages across models
-stability_summary <- data.frame(
-  Model = c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+stability_diagnostics <- data.frame(
+  Model = paste0("Model ", 1:2),
   Pct_Stable = c(
-    mean(ev_one < 1.0) * 100,
-    mean(ev_two < 1.0) * 100,
+    mean(ev_one < 1) * 100,
+    mean(ev_two < 1) * 100
+  ),
+  Median_Rho = c(
+    median(ev_one),
+    median(ev_two)
+  ),
+  P95_Rho = c(
+    quantile(ev_one, .95),
+    quantile(ev_two, .95)
+  ),
+  Max_Rho = c(
+    max(ev_one),
+    max(ev_two)
   )
 )
 
+
 # Export to CSV (row.names = FALSE removes the 1,2,3... index column)
-write.csv(stability_summary, file = "3_Model_Output/Model_narrative/Habitual/posterior_stability_summary.csv", row.names = FALSE)
+write.csv(stability_diagnostics, file = "3_Model_Output/Model_narrative/Habitual/posterior_stability_summary.csv", row.names = FALSE)
+
