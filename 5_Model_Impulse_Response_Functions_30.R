@@ -1,19 +1,136 @@
+###############################################################################
+################################## 5. IRF'S PLOT ##############################
+###############################################################################
 
-dir.create("4_Output_Analysis/Model_Baseline/Durable", recursive = TRUE, showWarnings = FALSE)
-dir.create("4_Output_Analysis/Model_Baseline/Habitual", recursive = TRUE, showWarnings = FALSE)
-dir.create("4_Output_Analysis/Model_Foreign/Durable", recursive = TRUE, showWarnings = FALSE)
-dir.create("4_Output_Analysis/Model_Foreign/Habitual", recursive = TRUE, showWarnings = FALSE)
-dir.create("4_Output_Analysis/Model_Narrative/Durable", recursive = TRUE, showWarnings = FALSE)
-dir.create("4_Output_Analysis/Model_Narrative/Habitual", recursive = TRUE, showWarnings = FALSE)
-dir.create("4_Output_Analysis/Model_Housing/Durable", recursive = TRUE, showWarnings = FALSE)
-dir.create("4_Output_Analysis/Model_Housing/Habitual", recursive = TRUE, showWarnings = FALSE)
+dirs <- c(outer(
+  c("Model_Baseline", "Model_Foreign", "Model_Narrative", "Model_Housing"),
+  c("Durable", "Habitual"),
+  function(m, type) file.path("4_Output_Analysis", m, type)
+))
+
+sapply(dirs, dir.create, recursive = TRUE, showWarnings = FALSE)
+
+
+#=============================================================================#
+#                          [1]  MODEL HOUSING (DURABLE)
+
+variables_durables <- c("Unemployment", "Interest", "House Price", 
+                       "DTA", "DSR", "LAI", "Savings", "Durables")
+
+
+for (p in 1:5) {
+
+  model <- readRDS(
+    paste0(
+      "3_Model_Output/Model_Housing/Durable/housing_durable_p",
+      p, ".rds"
+    )
+  )
+
+  irf <- plot_irf_two_shocks(
+    model = model,
+    variable_names = variables_durables,
+    output_dir = "4_Output_Analysis/Model_Housing/Durable",
+    filename = paste0("IRF_Housing_Lag_", p, ".png"),
+    horizon = 30,
+    shock_indices = c(1, 2, 3),
+    shock_labels = c(
+      "Monetary Policy Shock",
+      "Adverse Macro Shock",
+      "Asset Shock"
+    ),
+    title = paste0(
+      "Housing Identification: Impulse Response Functions (p = ", p, ")"
+    ),
+    system_label = "Durable Goods System"
+  )
+
+  print(irf$plot)
+
+  summary <- make_irf_summary_table(
+    irf_object = irf,
+    variable_names = variables_durables,
+    shock_labels = c(
+      "Monetary Policy Shock",
+      "Adverse Macro Shock",
+      "Asset Shock"
+    )
+  )
+
+  write.csv(
+    summary,
+    file.path(
+      "4_Output_Analysis/Model_Housing/Durable",
+      paste0("IRF_Housing_Lag_", p, "_Summary.csv")
+    ),
+    row.names = FALSE
+  )
+}
 
 
 
 #=============================================================================#
-#                          [1]  MODEL BASELINE DURABLE
+#                          [2]  MODEL HOUSING (HABITUAL)
 
-variables_durables <- c("GDP-D", "Unemployment", "CPIF", "Interest", "Durables", "DTA", "DSR", "LAI", "Savings", "REER")
+variables_habitual <- c("Unemployment", "Interest", "House Price", 
+                       "DTA", "DSR", "LAI", "Savings", "Habituals")
+
+
+for (p in 1:5) {
+
+  model <- readRDS(
+    paste0(
+      "3_Model_Output/Model_Housing/Habitual/housing_habitual_p",
+      p, ".rds"
+    )
+  )
+
+  irf <- plot_irf_two_shocks(
+    model = model,
+    variable_names = variables_habitual,
+    output_dir = "4_Output_Analysis/Model_Housing/Habitual",
+    filename = paste0("IRF_Housing_Lag_", p, ".png"),
+    horizon = 30,
+    shock_indices = c(1, 2, 3),
+    shock_labels = c(
+      "Monetary Policy Shock",
+      "Adverse Macro Shock",
+      "Asset Shock"
+    ),
+    title = paste0(
+      "Housing Identification: Impulse Response Functions (p = ", p, ")"
+    ),
+    system_label = "Habitual Goods System"
+  )
+
+  print(irf$plot)
+
+  summary <- make_irf_summary_table(
+    irf_object = irf,
+    variable_names = variables_habitual,
+    shock_labels = c(
+      "Monetary Policy Shock",
+      "Adverse Macro Shock",
+      "Asset Shock"
+    )
+  )
+
+  write.csv(
+    summary,
+    file.path(
+      "4_Output_Analysis/Model_Housing/Habitual",
+      paste0("IRF_Housing_Lag_", p, "_Summary.csv")
+    ),
+    row.names = FALSE
+  )
+}
+
+
+#=============================================================================#
+#                          [3]  MODEL MACRO (DURABLE)
+
+variables_durables <- c("GDP-D", "Unemployment", "CPIF", "Interest", "Durables",
+ "DTA", "DSR", "LAI", "Savings", "REER")
 
 
 for (p in 1:5) {
@@ -37,7 +154,7 @@ for (p in 1:5) {
       "Adverse Macro Shock"
     ),
     title = paste0(
-      "Baseline Identification: Impulse Response Functions (p = ", p, ")"
+      "Macro Identification: Impulse Response Functions (p = ", p, ")"
     ),
     system_label = "Durable Goods System"
   )
@@ -65,7 +182,7 @@ for (p in 1:5) {
 
 
 #=============================================================================#
-#                          [2]  MODEL BASELINE HABITUAL
+#                          [4]  MODEL MACRO (HABITUAL)
 
 variables_habituals <- c("GDP-D", "Unemployment", "CPIF", "Interest", "Habituals", "DTA", "DSR", "LAI", "Savings", "REER")
 
@@ -91,7 +208,7 @@ for (p in 1:5) {
       "Adverse Macro Shock"
     ),
     title = paste0(
-      "Baseline Identification: Impulse Response Functions (p = ", p, ")"
+      "Macro Identification: Impulse Response Functions (p = ", p, ")"
     ),
     system_label = "Habitual Goods System"
   )
@@ -118,9 +235,119 @@ for (p in 1:5) {
 }
 
 
+#=============================================================================#
+#                       [5]  MODEL MACRO DURABLE (NARRATIVE)
+
+variables_durables <- c("GDP-D", "Unemployment", "CPIF", "Interest", 
+"Durables", "DTA", "DSR", "LAI", "Savings", "REER")
+
+
+for (p in 1:2) {
+
+  model <- readRDS(
+    paste0(
+      "3_Model_Output/Model_Narrative/Durable/narrative_durable_p",
+      p, ".rds"
+    )
+  )
+
+  irf <- plot_irf_two_shocks(
+    model = model,
+    variable_names = variables_durables,
+    output_dir = "4_Output_Analysis/Model_Narrative/Durable",
+    filename = paste0("IRF_Narrative_Lag_", p, ".png"),
+    horizon = 30,
+    shock_indices = c(1, 2),
+    shock_labels = c(
+      "Monetary Policy Shock",
+      "Adverse Macro Shock"
+    ),
+    title = paste0(
+      "Narrative Identification: Impulse Response Functions (p = ", p, ")"
+    ),
+    system_label = "Durable Goods System"
+  )
+
+  print(irf$plot)
+
+  summary <- make_irf_summary_table(
+    irf_object = irf,
+    variable_names = variables_durables,
+    shock_labels = c(
+      "Monetary Policy Shock",
+      "Adverse Macro Shock"
+    )
+  )
+
+  write.csv(
+    summary,
+    file.path(
+      "4_Output_Analysis/Model_Narrative/Durable",
+      paste0("IRF_Narrative_Lag_", p, "_Summary.csv")
+    ),
+    row.names = FALSE
+  )
+}
+
 
 #=============================================================================#
-#                          [3]  MODEL FOREIGN DURABLE
+#                       [6]  MODEL MACRO DURABLE (NARRATIVE)
+
+variables_habituals<- c("GDP-D", "Unemployment", "CPIF", "Interest", 
+"Habitual", "DTA", "DSR", "LAI", "Savings", "REER")
+
+
+for (p in 1:2) {
+
+  model <- readRDS(
+    paste0(
+      "3_Model_Output/Model_Narrative/Habitual/narrative_habitual_p",
+      p, ".rds"
+    )
+  )
+
+  irf <- plot_irf_two_shocks(
+    model = model,
+    variable_names = variables_habituals,
+    output_dir = "4_Output_Analysis/Model_Narrative/Habitual",
+    filename = paste0("IRF_Narrative_Lag_", p, ".png"),
+    horizon = 30,
+    shock_indices = c(1, 2),
+    shock_labels = c(
+      "Monetary Policy Shock",
+      "Adverse Macro Shock"
+    ),
+    title = paste0(
+      "Narrative Identification: Impulse Response Functions (p = ", p, ")"
+    ),
+    system_label = "Habitual Goods System"
+  )
+
+  print(irf$plot)
+
+  summary <- make_irf_summary_table(
+    irf_object = irf,
+    variable_names = variables_habituals,
+    shock_labels = c(
+      "Monetary Policy Shock",
+      "Adverse Macro Shock"
+    )
+  )
+
+  write.csv(
+    summary,
+    file.path(
+      "4_Output_Analysis/Model_Narrative/Habitual",
+      paste0("IRF_Narrative_Lag_", p, "_Summary.csv")
+    ),
+    row.names = FALSE
+  )
+}
+
+
+
+#=============================================================================#
+#                       [7]  MODEL MACRO SMALL OPEN ECONOMY (DURABLE)
 
 
 variables_durables <- c("FED Rate", "KIX GDP", "KIX CPI", "GDP-D", "Unemployment", "CPIF", "Interest", "Durables", "DTA", "DSR", "LAI", "Savings", "REER")
@@ -141,7 +368,7 @@ for (p in 1:5) {
     output_dir = "4_Output_Analysis/Model_Foreign/Durable",
     filename = paste0("IRF_Foreign_Lag_", p, ".png"),
     horizon = 30,
-    shock_indices = c(7, 4),
+    shock_indices = c(7, 4), # Very Important to change or you'll plot the wrong shocks!
     shock_labels = c(
       "Monetary Policy Shock",
       "Adverse Macro Shock"
@@ -167,7 +394,7 @@ for (p in 1:5) {
     summary,
     file.path(
       "4_Output_Analysis/Model_Foreign/Durable",
-      paste0("IRF_Baseline_Lag_", p, "_Summary.csv")
+      paste0("IRF_Foreign_Lag_", p, "_Summary.csv")
     ),
     row.names = FALSE
   )
@@ -178,7 +405,7 @@ for (p in 1:5) {
 
 
 #=============================================================================#
-#                          [4]  MODEL FOREIGN HABITUAL
+#                       [8]  MODEL MACRO SMALL OPEN ECONOMY (HABITUAL)
 
 
 variables_habitual_foreign <- c("FED Rate", "KIX GDP", "KIX CPI",
@@ -209,7 +436,7 @@ for (p in 1:5) {
     title = paste0(
       "Baseline Identification: Impulse Response Functions (p = ", p, ")"
     ),
-    system_label = "Durable Goods System"
+    system_label = "Habitual Goods System"
   )
 
   print(irf$plot)
@@ -234,125 +461,9 @@ for (p in 1:5) {
 }
 
 
-#=============================================================================#
-#                          [1]  MODEL BASELINE DURABLE
-
-variables_durables <- c("GDP-D", "Unemployment", "CPIF", "Interest", "Durables", "DTA", "DSR", "LAI", "Savings", "REER")
-
-
-for (p in 1:2) {
-
-  model <- readRDS(
-    paste0(
-      "3_Model_Output/Model_Narrative/Durable/narrative_durable_p",
-      p, ".rds"
-    )
-  )
-
-  irf <- plot_irf_two_shocks(
-    model = model,
-    variable_names = variables_durables,
-    output_dir = "4_Output_Analysis/Model_Narrative/Durable",
-    filename = paste0("IRF_Baseline_Lag_", p, ".png"),
-    horizon = 30,
-    shock_indices = c(1, 2),
-    shock_labels = c(
-      "Monetary Policy Shock",
-      "Adverse Macro Shock"
-    ),
-    title = paste0(
-      "Baseline Identification: Impulse Response Functions (p = ", p, ")"
-    ),
-    system_label = "Durable Goods System"
-  )
-
-  print(irf$plot)
-
-  summary <- make_irf_summary_table(
-    irf_object = irf,
-    variable_names = variables_durables,
-    shock_labels = c(
-      "Monetary Policy Shock",
-      "Adverse Macro Shock"
-    )
-  )
-
-  write.csv(
-    summary,
-    file.path(
-      "4_Output_Analysis/Model_Narrative/Durable",
-      paste0("IRF_Baseline_Lag_", p, "_Summary.csv")
-    ),
-    row.names = FALSE
-  )
-}
 
 
 
-
-
-
-
-
-
-
-
-
-
-#=============================================================================#
-#                          [1]  MODEL BASELINE DURABLE
-
-variables_durables <- c("Unemployment", "Interest", "House Price", "DTA", "DSR", "LAI", "Savings", "Durables")
-
-
-for (p in 1:5) {
-
-  model <- readRDS(
-    paste0(
-      "3_Model_Output/Model_Housing/Durable/housing_durable_p",
-      p, ".rds"
-    )
-  )
-
-  irf <- plot_irf_two_shocks(
-    model = model,
-    variable_names = variables_durables,
-    output_dir = "4_Output_Analysis/Model_Housing/Durable",
-    filename = paste0("IRF_Baseline_Lag_", p, ".png"),
-    horizon = 30,
-    shock_indices = c(1, 2, 3),
-    shock_labels = c(
-      "Monetary Policy Shock",
-      "Adverse Macro Shock",
-      "Asset Shock"
-    ),
-    title = paste0(
-      "Baseline Identification: Impulse Response Functions (p = ", p, ")"
-    ),
-    system_label = "Durable Goods System"
-  )
-
-  print(irf$plot)
-
-  summary <- make_irf_summary_table(
-    irf_object = irf,
-    variable_names = variables_durables,
-    shock_labels = c(
-      "Monetary Policy Shock",
-      "Adverse Macro Shock",
-      "Asset Shock"
-    )
-  )
-
-  write.csv(
-    summary,
-    file.path(
-      "4_Output_Analysis/Model_Housing/Durable",
-      paste0("IRF_Baseline_Lag_", p, "_Summary.csv")
-    ),
-    row.names = FALSE
-  )
-}
 
 
 
@@ -755,11 +866,6 @@ plot_irf_two_shocks <- function(
 
 
 
-
-foreign_durable_p1
-
-
-dim(estimate_foreign_habitual_1$posterior$B)
 
 
 
