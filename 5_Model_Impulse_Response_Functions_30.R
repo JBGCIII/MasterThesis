@@ -14,8 +14,8 @@ sapply(dirs, dir.create, recursive = TRUE, showWarnings = FALSE)
 #=============================================================================#
 #                          [1]  MODEL HOUSING (DURABLE)
 
-variables_durables <- c("Unemployment", "Interest", "House Price", 
-                       "DTA", "DSR", "LAI", "Savings", "Durables")
+variables_durables <- c("Unemployment (pp)", "Interest (pp)", "Real House Price (Log)", 
+                       "DTA (pp)", "DSR (pp)", "LAI (pp)", "Savings (pp)", "Durables (Log)")
 
 
 for (p in 1:5) {
@@ -33,7 +33,7 @@ for (p in 1:5) {
     output_dir = "4_Output_Analysis/Model_Housing/Durable",
     filename = paste0("IRF_Housing_Lag_", p, ".png"),
     horizon = 30,
-    shock_indices = c(1, 2, 3),
+    shock_indices = c(2, 1, 3),
     shock_labels = c(
       "Monetary Policy Shock",
       "Adverse Macro Shock",
@@ -47,7 +47,7 @@ for (p in 1:5) {
 
   print(irf$plot)
 
-  summary <- make_irf_summary_table(
+  summary <- make_irf_summary_table_test(
     irf_object = irf,
     variable_names = variables_durables,
     shock_labels = c(
@@ -72,8 +72,8 @@ for (p in 1:5) {
 #=============================================================================#
 #                          [2]  MODEL HOUSING (HABITUAL)
 
-variables_habitual <- c("Unemployment", "Interest", "House Price", 
-                       "DTA", "DSR", "LAI", "Savings", "Habituals")
+variables_habitual  <- c("Unemployment (pp)", "Interest (pp)", "Real House Price (Log)", 
+                       "DTA (pp)", "DSR (pp)", "LAI (pp)", "Savings (pp)", "Habituals (Log)")
 
 
 for (p in 1:5) {
@@ -91,7 +91,7 @@ for (p in 1:5) {
     output_dir = "4_Output_Analysis/Model_Housing/Habitual",
     filename = paste0("IRF_Housing_Lag_", p, ".png"),
     horizon = 30,
-    shock_indices = c(1, 2, 3),
+    shock_indices = c(2, 1, 3),
     shock_labels = c(
       "Monetary Policy Shock",
       "Adverse Macro Shock",
@@ -129,8 +129,8 @@ for (p in 1:5) {
 #=============================================================================#
 #                          [3]  MODEL MACRO (DURABLE)
 
-variables_durables <- c("GDP-D", "Unemployment", "CPIF", "Interest", "Durables",
- "DTA", "DSR", "LAI", "Savings", "REER")
+variables_durables <- c("GDP-D (log)", "Unemployment (pp)", "CPIF (log)", "Interest (pp)", "Durables (log)",
+ "DTA (pp)", "DSR (pp)", "LAI (pp)", "Savings (pp)", "REER (log)")
 
 
 for (p in 1:5) {
@@ -148,7 +148,7 @@ for (p in 1:5) {
     output_dir = "4_Output_Analysis/Model_Baseline/Durable",
     filename = paste0("IRF_Baseline_Lag_", p, ".png"),
     horizon = 30,
-    shock_indices = c(1, 2),
+    shock_indices = c(4, 1),
     shock_labels = c(
       "Monetary Policy Shock",
       "Adverse Macro Shock"
@@ -184,14 +184,16 @@ for (p in 1:5) {
 #=============================================================================#
 #                          [4]  MODEL MACRO (HABITUAL)
 
-variables_habituals <- c("GDP-D", "Unemployment", "CPIF", "Interest", "Habituals", "DTA", "DSR", "LAI", "Savings", "REER")
+variables_habituals  <- c("GDP-D (log)", "Unemployment (pp)", "CPIF (log)", "Interest (pp)", "Habituals (log)",
+ "DTA (pp)", "DSR (pp)", "LAI (pp)", "Savings (pp)", "REER (log)")
+
 
 
 for (p in 1:5) {
 
   model <- readRDS(
     paste0(
-      "3_Model_Output_Test/Model_Baseline/Habitual/baseline_habitual_p",
+      "3_Model_Output/Model_Baseline/Habitual/baseline_habitual_p",
       p, ".rds"
     )
   )
@@ -200,7 +202,7 @@ for (p in 1:5) {
     model = model,
     variable_names = variables_habituals,
     output_dir = "4_Output_Analysis/Model_Baseline/Habitual",
-    filename = paste0("Test_IRF_Baseline_Lag_", p, ".png"),
+    filename = paste0("IRF_Baseline_Lag_", p, ".png"),
     horizon = 30,
     shock_indices = c(4, 1),
     shock_labels = c(
@@ -228,7 +230,7 @@ for (p in 1:5) {
     summary,
     file.path(
       "4_Output_Analysis/Model_Baseline/Habitual",
-      paste0("Test_IRF_Baseline_Lag_", p, "_Summary.csv")
+      paste0("IRF_Baseline_Lag_", p, "_Summary.csv")
     ),
     row.names = FALSE
   )
@@ -257,7 +259,7 @@ for (p in 1:2) {
     output_dir = "4_Output_Analysis/Model_Narrative/Durable",
     filename = paste0("IRF_Narrative_Lag_", p, ".png"),
     horizon = 30,
-    shock_indices = c(1, 2),
+    shock_indices = c(1, 2), # Note: Model was estimated on a different indices
     shock_labels = c(
       "Monetary Policy Shock",
       "Adverse Macro Shock"
@@ -868,8 +870,6 @@ plot_irf_two_shocks <- function(
 
 
 
-
-
 make_irf_summary_table <- function(
     irf_object,
     variable_names,
@@ -901,16 +901,14 @@ make_irf_summary_table <- function(
   if (length(variable_names) != n_variables) {
     stop(
       "variable_names has length ", length(variable_names),
-      " but the IRF contains ", n_variables,
-      " response variables."
+      " but the IRF contains ", n_variables, " response variables."
     )
   }
 
   if (length(shock_labels) != n_shocks) {
     stop(
       "shock_labels has length ", length(shock_labels),
-      " but the IRF contains ", n_shocks,
-      " shocks."
+      " but the IRF contains ", n_shocks, " shocks."
     )
   }
 
@@ -949,27 +947,6 @@ make_irf_summary_table <- function(
 
 
       # --------------------------------------------------------
-      # 95% posterior interval
-      # --------------------------------------------------------
-
-      lower_95 <- apply(
-        draws,
-        1,
-        quantile,
-        probs = 0.025,
-        na.rm = TRUE
-      )
-
-      upper_95 <- apply(
-        draws,
-        1,
-        quantile,
-        probs = 0.975,
-        na.rm = TRUE
-      )
-
-
-      # --------------------------------------------------------
       # Impact response: Q0
       # --------------------------------------------------------
 
@@ -995,25 +972,46 @@ make_irf_summary_table <- function(
 
 
       # --------------------------------------------------------
-      # 95% CI at the peak
+      # 68% posterior interval
       # --------------------------------------------------------
 
-      peak_lower_95 <- lower_95[
+      lower_68 <- apply(
+        draws,
+        1,
+        quantile,
+        probs = 0.16,
+        na.rm = TRUE
+      )
+
+      upper_68 <- apply(
+        draws,
+        1,
+        quantile,
+        probs = 0.84,
+        na.rm = TRUE
+      )
+
+
+      # --------------------------------------------------------
+      # 68% CI at the peak
+      # --------------------------------------------------------
+
+      peak_lower_68 <- lower_68[
         peak_index
       ]
 
-      peak_upper_95 <- upper_95[
+      peak_upper_68 <- upper_68[
         peak_index
       ]
 
 
       # --------------------------------------------------------
-      # Does the 95% credible interval exclude zero?
+      # Does the 68% credible interval exclude zero?
       # --------------------------------------------------------
 
       peak_significant <-
-        peak_lower_95 > 0 ||
-        peak_upper_95 < 0
+        peak_lower_68 > 0 ||
+        peak_upper_68 < 0
 
 
       significance_marker <-
@@ -1040,7 +1038,7 @@ make_irf_summary_table <- function(
 
         Peak_Horizon = peak_horizon,
 
-        Peak_95_Significant = significance_marker,
+        Peak_68_Significant = significance_marker,
 
         stringsAsFactors = FALSE
 

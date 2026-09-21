@@ -116,3 +116,5 @@ write.csv(
   vif_diff_results, 
   "2_Data_Inspection/Household_Financials_Correlation.csv"
 )
+
+

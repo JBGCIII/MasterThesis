@@ -56,9 +56,10 @@ sign_irf <- array(
 
 #----------------------------------------------------------------------------#
 # Shocks 
-mp_shock      <- 1  # Monetary Policy Shock
-macro_shock   <- 2  # Adverse Macro / Aggregate Demand Shock
-housing_shock <- 3  # Adverse Housing Collateral / Wealth Shock
+mp_shock      <- policy_idx  # Monetary Policy Shock
+macro_shock   <- unemp_idx  # Adverse Macro / Aggregate Demand Shock
+housing_shock <- house_idx  # Adverse Housing Collateral / Wealth Shock
+
 
 # Constrain restrictions for horizons 1 through 3 (Quarters 0, 1, 2)
 for (h in 1:3) {
