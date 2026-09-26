@@ -73,6 +73,79 @@ write.csv(
 )
 
 
+#============================================================================#
+#                  [2] Correlation Test Financial Variables
+#============================================================================# 
+
+# 2. Define Specifications using ONLY differenced variables (d_)
+specifications_diff <- list(
+  housing_durable  = c("d_unemployment_rate", "d_policy_rate", "d_house_price_real_log",
+                       "d_debt_to_asset_ratio", "d_dsr_value", "d_liquid_asset_to_income_ratio",
+                       "d_saving_rate", "d_cons_durable_log"),
+  
+  housing_habitual = c("d_unemployment_rate", "d_policy_rate", "d_house_price_real_log",
+                       "d_debt_to_asset_ratio", "d_dsr_value", "d_liquid_asset_to_income_ratio",
+                       "d_saving_rate", "d_cons_habitual_log"),
+  
+  macro_durable    = c("d_gdp_se_log", "d_unemployment_rate", "d_cpi_log", "d_policy_rate", "d_cons_durable_log",
+                       "d_debt_to_asset_ratio", "d_dsr_value", "d_liquid_asset_to_income_ratio",
+                       "d_saving_rate", "d_kix_real_log"),
+  
+  macro_habitual   = c("d_gdp_se_log", "d_unemployment_rate", "d_cpi_log", "d_policy_rate", "d_cons_habitual_log",
+                       "d_debt_to_asset_ratio", "d_dsr_value", "d_liquid_asset_to_income_ratio",
+                       "d_saving_rate", "d_kix_real_log"),
+  
+  foreign_durable  = c("d_fed_funds_rate", "d_kix_gdp_log", "d_kix_cpi", "d_gdp_se_log",
+                       "d_unemployment_rate", "d_cpi_log", "d_policy_rate", "d_cons_durable_log", 
+                       "d_debt_to_asset_ratio", "d_dsr_value", "d_liquid_asset_to_income_ratio",
+                       "d_saving_rate", "d_kix_real_log"),
+  
+  foreign_habitual = c("d_fed_funds_rate", "d_kix_gdp_log", "d_kix_cpi", "d_gdp_se_log",
+                       "d_unemployment_rate", "d_cpi_log", "d_policy_rate", "d_cons_habitual_log", 
+                       "d_debt_to_asset_ratio", "d_dsr_value", "d_liquid_asset_to_income_ratio",
+                       "d_saving_rate", "d_kix_real_log")
+)
+
+# 3. Create export directory
+dir.create("2_Data_Inspection/Specs_PCA", recursive = TRUE, showWarnings = FALSE)
+
+# 4. Iterate over specifications: compute Correlation, run PCA, export results
+pca_results <- imap(specifications_diff, function(var_names, spec_name) {
+  
+  # Extract relevant differenced subset
+  df_sub <- df_stationary %>% dplyr::select(all_of(var_names))
+  
+  # A. Save Correlation Matrix
+  cor_matrix <- cor(df_sub, use = "complete.obs")
+  write.csv(
+    cor_matrix, 
+    file.path("2_Data_Inspection/Specs_PCA", paste0("Correlation_", spec_name, ".csv"))
+  )
+  
+  # B. Run PCA on standardized differenced series
+  pca_obj <- prcomp(df_sub, scale. = TRUE)
+  
+  # C. Save Loadings (Eigenvectors)
+  write.csv(
+    pca_obj$rotation, 
+    file.path("2_Data_Inspection/Specs_PCA", paste0("PCA_Loadings_", spec_name, ".csv"))
+  )
+  
+  # D. Save Variance Summary Table (Standard Dev, Proportion, Cumulative)
+  pca_summary <- summary(pca_obj)$importance
+  write.csv(
+    pca_summary, 
+    file.path("2_Data_Inspection/Specs_PCA", paste0("PCA_Variance_Summary_", spec_name, ".csv"))
+  )
+  
+  return(pca_obj)
+})
+
+# Access any PCA model from the list directly (e.g., macro_durable summary):
+summary(pca_results$macro_durable)
+
+
+
 
 
 #============================================================================#

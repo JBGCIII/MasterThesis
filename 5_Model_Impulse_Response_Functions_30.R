@@ -240,8 +240,9 @@ for (p in 1:5) {
 #=============================================================================#
 #                       [5]  MODEL MACRO DURABLE (NARRATIVE)
 
-variables_durables <- c("GDP-D", "Unemployment", "CPIF", "Interest", 
-"Durables", "DTA", "DSR", "LAI", "Savings", "REER")
+
+variables_durables <- c("GDP-D (log)", "Unemployment (pp)", "CPIF (log)", "Interest (pp)", "Durables (log)",
+ "DTA (pp)", "DSR (pp)", "LAI (pp)", "Savings (pp)", "REER (log)")
 
 
 for (p in 1:2) {
@@ -295,8 +296,9 @@ for (p in 1:2) {
 #=============================================================================#
 #                       [6]  MODEL MACRO DURABLE (NARRATIVE)
 
-variables_habituals<- c("GDP-D", "Unemployment", "CPIF", "Interest", 
-"Habitual", "DTA", "DSR", "LAI", "Savings", "REER")
+variables_habituals  <- c("GDP-D (log)", "Unemployment (pp)", "CPIF (log)", "Interest (pp)", "Habituals (log)",
+ "DTA (pp)", "DSR (pp)", "LAI (pp)", "Savings (pp)", "REER (log)")
+
 
 
 for (p in 1:2) {
@@ -352,7 +354,9 @@ for (p in 1:2) {
 #                       [7]  MODEL MACRO SMALL OPEN ECONOMY (DURABLE)
 
 
-variables_durables <- c("FED Rate", "KIX GDP", "KIX CPI", "GDP-D", "Unemployment", "CPIF", "Interest", "Durables", "DTA", "DSR", "LAI", "Savings", "REER")
+variables_durables <- c("FED Rate (pp)", "KIX GDP (Log)", "KIX CPI (Log)",
+ "GDP-D (Log)", "Unemployment (pp)", "CPIF (Log)", "Interest (pp)", "Durables (log)", 
+ "DTA (pp)", "DSR (pp)", "LAI (pp)", "Savings (pp)", "REER (log)")
 
 
 for (p in 1:5) {
@@ -410,9 +414,9 @@ for (p in 1:5) {
 #                       [8]  MODEL MACRO SMALL OPEN ECONOMY (HABITUAL)
 
 
-variables_habitual_foreign <- c("FED Rate", "KIX GDP", "KIX CPI",
- "GDP-D", "Unemployment", "CPIF", "Interest", "Habituals", "DTA",
-  "DSR", "LAI", "Savings", "REER")
+variables_habitual_foreign <- <- c("FED Rate (pp)", "KIX GDP (Log)", "KIX CPI (Log)",
+ "GDP-D (Log)", "Unemployment (pp)", "CPIF (Log)", "Interest (pp)", "Habituals (log)", 
+ "DTA (pp)", "DSR (pp)", "LAI (pp)", "Savings (pp)", "REER (log)")
 
 
 for (p in 1:5) {

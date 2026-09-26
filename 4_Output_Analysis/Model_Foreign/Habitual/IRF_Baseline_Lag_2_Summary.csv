@@ -1,4 +1,4 @@
-"Variable","Shock","Impact_Q0","Peak_Response","Peak_Horizon","Peak_95_Significant"
+"Variable","Shock","Impact_Q0","Peak_Response","Peak_Horizon","Peak_68_Significant"
 "FED Rate","Monetary Policy Shock",0,0,0,""
 "KIX GDP","Monetary Policy Shock",0,0,0,""
 "KIX CPI","Monetary Policy Shock",0,0,0,""
