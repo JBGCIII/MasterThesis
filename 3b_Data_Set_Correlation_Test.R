@@ -1,33 +1,35 @@
+###############################################################################
+########## Correlation Test and Particle Component Analysis ###################
+###############################################################################
 
+# ==============================================================================
+# [1] Dataset Import and Full System Exploratory Analysis
+# ==============================================================================
 
-#============================================================================#
-#                            [2] Correlation Test
-#============================================================================# 
-
-
+# 1.1 Read seasonally adjusted dataset for correlation and PCA diagnostics
 data_set_correlation <- read_csv("2b_seasonally_adjusted_data.csv")
 
-
-# 2. Compute Correlation Matrix on Raw Levels (for inspection)
+# 1.2 Select all numeric columns for initial levels correlation
 df_numeric_levels <- data_set_correlation %>% dplyr::select(where(is.numeric))
 
+# 1.3 Compute and export complete levels correlation matrix
 write.csv(
   cor(df_numeric_levels, use = "complete.obs"), 
   "2_Data_Inspection/Correlation_Matrix_Levels.csv"
 )
 
-# 3. Transform I(1) variables to stationary I(0) representations
-# Log-levels become Quarter-on-Quarter Growth Rates (Log-Differences)
-# Percentages/Ratios become First Differences (Percentage Point Changes)
+# 1.4 Transform non-stationary I(1) variables to stationary I(0) representations:
+# - Log-levels converted to quarter-on-quarter growth rates (log-differences)
+# - Rates/ratios converted to first differences (percentage point changes)
 df_stationary <- data_set_correlation %>%
   mutate(
-    # --- Foreign Block (Growth / Diff) ---
+    # --- Foreign Block (Growth / Differences) ---
     d_oil_price_log                = oil_price_log - lag(oil_price_log),
     d_fed_funds_rate               = fed_funds_rate - lag(fed_funds_rate),
     d_kix_gdp_log                  = kix_gdp_log - lag(kix_gdp_log),
     d_kix_cpi                      = kix_cpi - lag(kix_cpi),
     
-    # --- Domestic Real Block (Growth / Diff) ---
+    # --- Domestic Real Block (Growth / Differences) ---
     d_gdp_se_log                   = gdp_se_log - lag(gdp_se_log),
     d_cons_total_log               = cons_total_log - lag(cons_total_log),
     d_cons_durable_log             = cons_durable_log - lag(cons_durable_log),
@@ -35,7 +37,7 @@ df_stationary <- data_set_correlation %>%
     d_unemployment_rate            = unemployment_rate - lag(unemployment_rate),
     d_consumer_confidence          = consumer_confidence - lag(consumer_confidence),
     
-    # --- Housing & Balance Sheet Block (Growth / Diff) ---
+    # --- Housing & Balance Sheet Block (Growth / Differences) ---
     d_house_price_real_log         = house_price_real_log - lag(house_price_real_log),
     d_debt_income                  = debt_income - lag(debt_income),
     d_debt_to_asset_ratio          = debt_to_asset_ratio - lag(debt_to_asset_ratio),
@@ -43,41 +45,40 @@ df_stationary <- data_set_correlation %>%
     d_liquid_asset_to_income_ratio = liquid_asset_to_income_ratio - lag(liquid_asset_to_income_ratio),
     d_saving_rate                  = saving_rate - lag(saving_rate),
     
-    # --- Domestic Nominal & Policy Block (Growth / Diff) ---
+    # --- Domestic Nominal & Policy Block (Growth / Differences) ---
     d_cpi_log                      = cpi_log - lag(cpi_log),
     d_policy_rate                  = policy_rate - lag(policy_rate),
     d_kix_real_log                 = kix_real_log - lag(kix_real_log)
   ) %>%
   drop_na()
 
-# 4. Select ONLY the stationary transformed variables
+# 1.5 Isolate only stationary differenced variables starting with 'd_'
 df_clean_pca <- df_stationary %>% 
   dplyr::select(starts_with("d_"))
 
-# 5. Export Stationary Correlation Matrix
+# 1.6 Compute and export stationary first-difference correlation matrix
 write.csv(
   cor(df_clean_pca, use = "complete.obs"), 
   "2_Data_Inspection/Correlation_Matrix_First_Diff.csv"
 )
 
-# 6. Run Principal Component Analysis (PCA) on standardized stationary series
+# 1.7 Perform Principal Component Analysis (PCA) on standardized stationary series
 pca_stationary <- prcomp(df_clean_pca, scale. = TRUE)
 
-# 7. Print PCA Summary to Console and Export Factor Loadings
+# 1.8 Display PCA summary to console (proportion of variance explained)
 summary(pca_stationary)
 
-# Export PCA loadings (eigenvectors) to examine variable contributions per component
+# 1.9 Export PCA factor loadings (eigenvectors) across all system variables
 write.csv(
   pca_stationary$rotation, 
   "2_Data_Inspection/PCA_Loadings_Stationary.csv"
 )
 
+# ==============================================================================
+# [2] Specification-Specific PCA & Multicollinearity Diagnostics
+# ==============================================================================
 
-#============================================================================#
-#                  [2] Correlation Test Financial Variables
-#============================================================================# 
-
-# 2. Define Specifications using ONLY differenced variables (d_)
+# 2.1 Define VAR model candidate specifications using differenced variables
 specifications_diff <- list(
   housing_durable  = c("d_unemployment_rate", "d_policy_rate", "d_house_price_real_log",
                        "d_debt_to_asset_ratio", "d_dsr_value", "d_liquid_asset_to_income_ratio",
@@ -106,32 +107,32 @@ specifications_diff <- list(
                        "d_saving_rate", "d_kix_real_log")
 )
 
-# 3. Create export directory
+# 2.2 Create output directory for specification-level PCA files
 dir.create("2_Data_Inspection/Specs_PCA", recursive = TRUE, showWarnings = FALSE)
 
-# 4. Iterate over specifications: compute Correlation, run PCA, export results
+# 2.3 Iterate over candidate specifications: export Correlation, PCA Loadings, and Variance
 pca_results <- imap(specifications_diff, function(var_names, spec_name) {
   
-  # Extract relevant differenced subset
+  # 2.3.1 Subset data frame to target specification variables
   df_sub <- df_stationary %>% dplyr::select(all_of(var_names))
   
-  # A. Save Correlation Matrix
+  # 2.3.2 Export specification correlation matrix
   cor_matrix <- cor(df_sub, use = "complete.obs")
   write.csv(
     cor_matrix, 
     file.path("2_Data_Inspection/Specs_PCA", paste0("Correlation_", spec_name, ".csv"))
   )
   
-  # B. Run PCA on standardized differenced series
+  # 2.3.3 Perform PCA on standardized specification subset
   pca_obj <- prcomp(df_sub, scale. = TRUE)
   
-  # C. Save Loadings (Eigenvectors)
+  # 2.3.4 Export specification PCA loadings (eigenvectors)
   write.csv(
     pca_obj$rotation, 
     file.path("2_Data_Inspection/Specs_PCA", paste0("PCA_Loadings_", spec_name, ".csv"))
   )
   
-  # D. Save Variance Summary Table (Standard Dev, Proportion, Cumulative)
+  # 2.3.5 Export specification variance summary table (Std Dev, Proportion, Cumulative)
   pca_summary <- summary(pca_obj)$importance
   write.csv(
     pca_summary, 
@@ -141,18 +142,14 @@ pca_results <- imap(specifications_diff, function(var_names, spec_name) {
   return(pca_obj)
 })
 
-# Access any PCA model from the list directly (e.g., macro_durable summary):
+# 2.4 Example inspection: Print summary for macro_durable specification
 summary(pca_results$macro_durable)
 
+# ==============================================================================
+# [3] Targeted Household Financials Multicollinearity & VIF Analysis
+# ==============================================================================
 
-
-
-
-#============================================================================#
-#                  [2] Correlation Test Financial Variables
-#============================================================================# 
-
-# 1. Extract and take first differences of the household variables
+# 3.1 Extract and first-difference specific household balance sheet variables
 household_diff <- data.frame(
   debt_to_asset_ratio          = diff(bvar_data$debt_to_asset_ratio),
   dsr_value                    = diff(bvar_data$dsr_value),
@@ -160,15 +157,16 @@ household_diff <- data.frame(
   saving_rate                  = diff(bvar_data$saving_rate)
 )
 
-# Remove any missing values resulting from the diff() operation
+# 3.2 Remove initial missing values (NA) resulting from differencing
 household_diff <- na.omit(household_diff)
 
-# 2. Compute Correlation Matrix on Differences
+# 3.3 Compute pairwise correlation matrix across household balance sheet differences
 cor_diff <- cor(household_diff, use = "pairwise.complete.obs")
 cat("=== Correlation Matrix (First Differences) ===\n")
 print(round(cor_diff, 3))
 
-# 3. Compute VIF on First Differences
+# 3.4 Calculate Variance Inflation Factors (VIF) to detect multicollinearity:
+# Formula: VIF_i = 1 / (1 - R_i^2) from regressing variable i on remaining variables
 vif_diff_results <- sapply(names(household_diff), function(var) {
   predictors <- setdiff(names(household_diff), var)
   formula_str <- paste(var, "~", paste(predictors, collapse = " + "))
@@ -179,15 +177,12 @@ vif_diff_results <- sapply(names(household_diff), function(var) {
   1 / (1 - r_sq)
 })
 
+# 3.5 Output household financial VIF values to console
 cat("\n=== Variance Inflation Factors (First Differences) ===\n")
 print(round(vif_diff_results, 2))
 
-
-
-# Export PCA loadings (eigenvectors) to examine variable contributions per component
+# 3.6 Export household balance sheet VIF results to CSV
 write.csv(
   vif_diff_results, 
   "2_Data_Inspection/Household_Financials_Correlation.csv"
 )
-
-

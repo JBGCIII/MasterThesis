@@ -1,34 +1,41 @@
 ###############################################################################
-############################ 2b. KPSS/ADF/CORR TEST ###########################
+######################### 2b. Stationarity Test ###############################
 ###############################################################################
-#                              [1] Unit root Tests
+
+#=============================================================================#
+#                          [1] Unit Root Tests (ADF & KPSS)
 #=============================================================================#
 
+# 1.1 Read seasonally adjusted macroeconomic dataset for stationarity testing
 data_set_adf_kpss <- read_csv("2b_seasonally_adjusted_data.csv")
 
-# Helper function to run ADF & KPSS tests across multiple specifications
+# 1.2 Define multi-specification stationarity checking function (ADF and KPSS)
 check_stationarity_multi <- function(x_vector, var_name, alpha = 0.05) {
-  # Clean vector (remove NAs)
+  
+  # 1.2.1 Clean vector by removing missing (NA) observations
   x <- na.omit(x_vector)
   
-  # Ensure there's enough data to test
+  # 1.2.2 Ensure adequate sample size before executing unit root tests
   if (length(x) < 10) return(NULL)
   
   results_list <- list()
   
-  # Define the specifications to test
+  # 1.2.3 Define testing specifications (Constant/Drift vs. Constant + Trend)
   specs <- list(
     list(name = "Drift (Constant)", adf_type = "drift", kpss_type = "mu"),
     list(name = "Trend (Constant + Trend)", adf_type = "trend", kpss_type = "tau")
   )
   
+  # 1.2.4 Loop through deterministic specifications
   for (spec in specs) {
+    
     # --------------------------------------------------------------------------
     # 1. ADF Test (Null H0: Series has a unit root / Non-stationary)
     # --------------------------------------------------------------------------
+    # Fit Augmented Dickey-Fuller model selecting lag length via AIC
     adf_res <- ur.df(x, type = spec$adf_type, selectlags = "AIC")
     
-    # Extract test statistic and 5% critical value based on type
+    # Extract test statistic and 5% critical value based on drift or trend specification
     if (spec$adf_type == "drift") {
       adf_stat <- adf_res@teststat[1, "tau2"]
       adf_crit_5pct <- adf_res@cval["tau2", "5pct"]
@@ -40,27 +47,32 @@ check_stationarity_multi <- function(x_vector, var_name, alpha = 0.05) {
       adf_crit_5pct <- adf_res@cval["tau1", "5pct"]
     }
     
+    # ADF decision rule: Reject H0 if statistic < critical value
     adf_is_stationary <- adf_stat < adf_crit_5pct
     
     # --------------------------------------------------------------------------
     # 2. KPSS Test (Null H0: Series is stationary)
     # --------------------------------------------------------------------------
+    # Run Kwiatkowski-Phillips-Schmidt-Shin test for stationarity
     kpss_res <- ur.kpss(x, type = spec$kpss_type)
     kpss_stat <- kpss_res@teststat
     kpss_crit_5pct <- kpss_res@cval[1, "5pct"]
     
+    # KPSS decision rule: Fail to reject H0 if statistic < critical value
     kpss_is_stationary <- kpss_stat < kpss_crit_5pct
     
     # --------------------------------------------------------------------------
-    # 3. Combined Verdict
+    # 3. Combined Verdict Logic
     # --------------------------------------------------------------------------
+    # Reconcile ADF and KPSS test outcomes to form combined order-of-integration verdict
     verdict <- case_when(
-      adf_is_stationary & kpss_is_stationary  ~ "Stationary (I(0))",
+      adf_is_stationary & kpss_is_stationary   ~ "Stationary (I(0))",
       !adf_is_stationary & !kpss_is_stationary ~ "Non-Stationary (I(1))",
       adf_is_stationary & !kpss_is_stationary  ~ "Conflicting (ADF=I(0), KPSS=I(1))",
       !adf_is_stationary & kpss_is_stationary ~ "Conflicting (ADF=I(1), KPSS=I(0))"
     )
     
+    # 1.2.5 Store specification test statistics and verdicts
     results_list[[spec$name]] <- data.frame(
       Variable       = var_name,
       Specification  = spec$name,
@@ -75,23 +87,24 @@ check_stationarity_multi <- function(x_vector, var_name, alpha = 0.05) {
     )
   }
   
+  # 1.2.6 Return combined specification results data frame
   return(bind_rows(results_list))
 }
 
-# ==============================================================================
-# Run automatically across ALL numeric columns
-# ==============================================================================
+#=============================================================================#
+#                   [2] Automated Execution Across All Variables
+#=============================================================================#
 
+# 2.1 Identify all numeric column names for stationarity evaluation
 numeric_cols <- names(data_set_adf_kpss)[sapply(data_set_adf_kpss, is.numeric)]
 
-# Run loop and combine into one comprehensive summary table
+# 2.2 Map unit root function across numeric columns and assemble summary table
 stationarity_summary_multi <- map_dfr(numeric_cols, function(col) {
   check_stationarity_multi(data_set_adf_kpss[[col]], var_name = col)
 })
 
-# Print summary to console
+# 2.3 Print complete multi-specification stationarity table to console
 print(stationarity_summary_multi)
 
-# Export to CSV for inspection
+# 2.4 Export complete stationarity summary report to CSV
 write_csv(stationarity_summary_multi, "2_Data_Inspection/Stationarity_Summary_MultiSpec.csv")
-

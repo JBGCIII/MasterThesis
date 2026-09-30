@@ -1,27 +1,34 @@
 ###############################################################################
-############################# 1.b DATA_SET_PROCESSING #########################
+################################ Debt-to-Asset ################################
 ###############################################################################
-#                   Real Asset Quarterly Interpolation
 
-# Assets Yearly,
+# =============================================================================
+# 1. Real Asset Quarterly Interpolation
+# =============================================================================
+
+# 1.1 Load annual household real assets dataset from SCB
 yearly_asset <- read_csv("0_Raw_Data/4_SCB_household_balance_sheet_annual.csv")
-# House Price Index, Quarterly
+
+# 1.2 Load quarterly house price index dataset from SCB
 ha <- read_csv("0_Raw_Data/6_SCB_house_price_index_quarterly_all_regions.csv")
 
+# 1.3 Inspect unique asset classifications in raw data
 unique(yearly_asset$`type of asset`)
 
+# ------------------------------------------------------------------------------
+# 2. Extract & Aggregate Annual Housing Assets
+# ------------------------------------------------------------------------------
 
-#----------------------------------------------------------------------------#
-
-# Define housing items according to SCB national balance sheet standards
+# 2.1 Define housing items according to SCB national balance sheet standards
 housing_items <- c(
-  "Dwellings ",                                    # [7] Structure value
-  "Land underlying dwellings",                    # [33] Land value
-  "Other equity, tenant ownership rights"        # [50] Tenant-owned apartments (bostadsrätter)
-                                                   # The item needs to be be removed if using financial assets as tenant ownership rights"
-                                                   # are already included in financial asset (Thank you ESA 2010)
-                                                   # I don't so it's ok!
+  "Dwellings ",                           # [7] Structure value
+  "Land underlying dwellings",           # [33] Land value
+  "Other equity, tenant ownership rights"# [50] Tenant-owned apartments (bostadsrätter)
+                                         # Note: tenant ownership rights are included as housing asset
+                                         # (ESA 2010 treats it under financial assets if separate)
 )
+
+# 2.2 Filter and aggregate total annual housing asset values (SEK million)
 housing_assets_annual <- yearly_asset %>%
   # Strip trailing spaces from asset names to ensure clean matching
   mutate(type_clean = trimws(`type of asset`)) %>%
@@ -37,7 +44,7 @@ housing_assets_annual <- yearly_asset %>%
   ) %>%
   arrange(year)
 
-# Convert to annual time series
+# 2.3 Convert aggregated annual values into an annual R time series object (ts)
 housing_assets_ts <- ts(
   housing_assets_annual$housing_assets,
   start = min(housing_assets_annual$year),
@@ -45,19 +52,28 @@ housing_assets_ts <- ts(
 )
 
 housing_assets_ts
-#----------------------------------------------------------------------------#
 
+# ------------------------------------------------------------------------------
+# 3. Prepare High-Frequency Indicator (Quarterly House Price Index)
+# ------------------------------------------------------------------------------
+
+# 3.1 Filter house price index for nationwide coverage from 1996 Q1 onwards
 housing_index_filtered <- ha %>%
   filter(region == "Sweden", quarter >= "1996K1") %>%
   arrange(quarter)
 
+# 3.2 Convert quarterly index into a quarterly time series object (ts)
 housing_index_ts <- ts(
   housing_index_filtered$Index,
   start = c(1996, 1), # Year 1996, Quarter 1
   frequency = 4
 )
-#----------------------------------------------------------------------------#
 
+# ------------------------------------------------------------------------------
+# 4. Temporal Disaggregation (Annual to Quarterly Interpolation)
+# ------------------------------------------------------------------------------
+
+# 4.1 Perform Denton-Cholette temporal disaggregation (stock series: conversion = "last")
 fit_nfa_denton_cholette <- td(
   housing_assets_ts ~ 0 + housing_index_ts,
   to = "quarterly",
@@ -65,10 +81,10 @@ fit_nfa_denton_cholette <- td(
   conversion = "last"
 )
 
+# 4.2 Extract interpolated quarterly Non-Financial Asset (NFA) series
 nfa_quarterly <- predict(fit_nfa_denton_cholette)
 
-#----------------------------------------------------------------------------#
-
+# 4.3 Perform Chow-Lin maxlog temporal disaggregation as a robustness control
 fit_nfa_chow_lin <- td(
   housing_assets_ts ~ 0 + housing_index_ts,
   to = "quarterly",
@@ -76,26 +92,26 @@ fit_nfa_chow_lin <- td(
   conversion = "last"
 )
 
+# 4.4 Extract alternative Chow-Lin interpolated quarterly series
 nfa_quarterly_controll <- predict(fit_nfa_chow_lin)
 
-#----------------------------------------------------------------------------#
+# ------------------------------------------------------------------------------
+# 5. Method Comparison & Inspection
+# ------------------------------------------------------------------------------
 
+# 5.1 Calculate annualized quarterly log growth rates (%) for both methods
 growth_dc <- 100 * diff(log(nfa_quarterly))
 growth_cl <- 100 * diff(log(nfa_quarterly_controll))
 
-#----------------------------------------------------------------------------#
+# Note on Seasonality:
+# isSeasonal(nfa_quarterly, test = "combined", freq = 4)
+# NFA exhibits seasonality, but seasonality disappears when calculating the debt ratio.
 
-#isSeasonal(nfa_quarterly, test = "combined", freq = 4)
-#NFA is seasonal, but seasonality dissapears in the calculation for the ratio.
-
-#============================================================================#
-
-# 1. Open PNG graphics device
+# 5.2 Open PNG graphics device to save method comparison plot
 png("2_Data_Inspection/Figure_1_interpolation_growth_comparison.png",
- width = 800, height = 600)
+    width = 800, height = 600)
 
-#----------------------------------------------------------------------------#
-# 2. Plot the first series
+# 5.3 Plot growth rates from Denton-Cholette interpolation
 plot(growth_dc, 
      type = "l", 
      col = "blue", 
@@ -105,43 +121,41 @@ plot(growth_dc,
      ylab = "Growth Rate (%)",
      xlab = "Time")
 
-#----------------------------------------------------------------------------#
-# 3. Add the second series
+# 5.4 Overlay growth rates from Chow-Lin interpolation
 lines(growth_cl, col = "red", lwd = 2)
 
-#----------------------------------------------------------------------------#
-# 4. Add a legend
+# 5.5 Add legend to plot
 legend("topright", 
        legend = c("NFA Growth", "NFA Growth (Controlled)"), 
        col = c("blue", "red"), 
        lwd = 2)
-#----------------------------------------------------------------------------#
-# 5. Save and close the PNG file
+
+# 5.6 Close PNG device and save file
 dev.off()
 
-#============================================================================#
-#                            Debt to Asset
-#============================================================================#
+# =============================================================================
+# 6. Debt-to-Asset Ratio Calculation
+# =============================================================================
 
-#---------------------------------------------------------------
+# 6.1 Extract total household loan liabilities from financial accounts (fa)
 household_loans <- fa %>%
   filter(item == "Loans, total") %>%
   group_by(quarter) %>%
-  # Filter out the small asset series by keeping the primary liability sum
+  # Filter out small asset series by taking maximum balance value (primary liability)
   summarize(
     Loans_total = max(Balances, na.rm = TRUE), # Keeps the large liability series
     .groups = "drop"
   )
 
-# Convert interpolated NFA ts object to a data frame matching SCB quarters
+# 6.2 Convert interpolated NFA ts object to a tibble with matching SCB quarter format ("YYYYK1")
 nfa_dates <- zoo::as.yearqtr(time(nfa_quarterly))
 
 nfa_df <- tibble(
-  quarter = gsub("Q", "K", format(nfa_dates, "%YQ%q")), # Ensures format matches SCB "1996K1"
+  quarter = gsub("Q", "K", format(nfa_dates, "%YQ%q")), # Format match for SCB "1996K1"
   nfa_dc = as.numeric(nfa_quarterly)
 )
 
-# 5. Merge, Adjust Liabilities, and Compute Asset-Liability Ratios
+# 6.3 Merge liabilities with interpolated real assets and compute ratio (%)
 debt_to_asset <- nfa_df %>%
   left_join(household_loans, by = "quarter") %>%
   arrange(quarter) %>%
@@ -153,11 +167,12 @@ debt_to_asset <- nfa_df %>%
     debt_to_asset_ratio
   )
 
-#---------------------------------------------------------------------------#
-# 6. Save Processed Dataset
-#---------------------------------------------------------------------------#
+# ------------------------------------------------------------------------------
+# 7. Save Processed Dataset
+# ------------------------------------------------------------------------------
+
+# 7.1 Export completed Debt-to-Real-Asset ratio series to CSV
 write_csv(
   debt_to_asset, 
   "1_Processed_Data/Data_Set_Columns/3-5_B_debt_to_real_asset.csv"
 )
-
