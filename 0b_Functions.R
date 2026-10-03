@@ -1,5 +1,5 @@
 ###############################################################################
-################################# 0.FUNCTIONS #################################
+###############################  0b.FUNCTIONS  ################################
 ###############################################################################
 
 #=========================# FUNCTION USED IN DATA CREATION
@@ -302,7 +302,6 @@ plot_irf_two_shocks <- function(
       )
     )
 
-
   # ----------------------------------------------------------
   # 7. Create plot
   # ----------------------------------------------------------
@@ -435,7 +434,6 @@ plot_irf_two_shocks <- function(
       )
     )
 
-
   # ----------------------------------------------------------
   # 8. Create output directory
   # ----------------------------------------------------------
@@ -445,7 +443,6 @@ plot_irf_two_shocks <- function(
     recursive = TRUE,
     showWarnings = FALSE
   )
-
 
   # ----------------------------------------------------------
   # 9. Save plot
@@ -464,7 +461,6 @@ plot_irf_two_shocks <- function(
     dpi = dpi
   )
 
-
   # ----------------------------------------------------------
   # 10. Report
   # ----------------------------------------------------------
@@ -474,7 +470,6 @@ plot_irf_two_shocks <- function(
     plot_path,
     "\n"
   )
-
 
   # ----------------------------------------------------------
   # 11. Return useful objects
@@ -511,15 +506,11 @@ make_irf_summary_table <- function(
   # ------------------------------------------------------------
   # 1. Extract IRF array
   # ------------------------------------------------------------
-
   irf_array <- irf_object$irfs
-
   dims <- dim(irf_array)
-
   n_variables <- dims[1]
   n_shocks    <- dims[2]
   n_horizons  <- dims[3]
-
   available_horizons <- 0:(n_horizons - 1)
 
 
@@ -540,16 +531,11 @@ make_irf_summary_table <- function(
       " but the IRF contains ", n_shocks, " shocks."
     )
   }
-
-
   # ------------------------------------------------------------
   # 3. Results container
   # ------------------------------------------------------------
-
   results <- list()
   counter <- 1
-
-
   # ------------------------------------------------------------
   # 4. Loop over shocks and variables
   # ------------------------------------------------------------
@@ -562,11 +548,9 @@ make_irf_summary_table <- function(
       # horizon x posterior draw
       draws <- irf_array[v, s, , ]
 
-
       # --------------------------------------------------------
       # Posterior median at each horizon
       # --------------------------------------------------------
-
       median_irf <- apply(
         draws,
         1,
@@ -574,13 +558,10 @@ make_irf_summary_table <- function(
         na.rm = TRUE
       )
 
-
       # --------------------------------------------------------
       # Impact response: Q0
       # --------------------------------------------------------
-
       impact_response <- median_irf[1]
-
 
       # --------------------------------------------------------
       # Peak response
@@ -588,22 +569,16 @@ make_irf_summary_table <- function(
       # Defined as the response with the largest absolute
       # median magnitude over the IRF horizon.
       # --------------------------------------------------------
-
       peak_index <- which.max(
         abs(median_irf)
       )
-
       peak_response <- median_irf[peak_index]
-
       peak_horizon <- available_horizons[
         peak_index
       ]
-
-
       # --------------------------------------------------------
       # 68% posterior interval
       # --------------------------------------------------------
-
       lower_68 <- apply(
         draws,
         1,
@@ -611,7 +586,6 @@ make_irf_summary_table <- function(
         probs = 0.16,
         na.rm = TRUE
       )
-
       upper_68 <- apply(
         draws,
         1,
@@ -619,29 +593,21 @@ make_irf_summary_table <- function(
         probs = 0.84,
         na.rm = TRUE
       )
-
-
       # --------------------------------------------------------
       # 68% CI at the peak
       # --------------------------------------------------------
-
       peak_lower_68 <- lower_68[
         peak_index
       ]
-
       peak_upper_68 <- upper_68[
         peak_index
       ]
-
-
       # --------------------------------------------------------
       # Does the 68% credible interval exclude zero?
       # --------------------------------------------------------
-
       peak_significant <-
         peak_lower_68 > 0 ||
         peak_upper_68 < 0
-
 
       significance_marker <-
         ifelse(
@@ -649,26 +615,16 @@ make_irf_summary_table <- function(
           "*",
           ""
         )
-
-
       # --------------------------------------------------------
       # Store result
       # --------------------------------------------------------
-
       results[[counter]] <- data.frame(
-
         Variable = variable_names[v],
-
         Shock = shock_labels[s],
-
         Impact_Q0 = impact_response,
-
         Peak_Response = peak_response,
-
         Peak_Horizon = peak_horizon,
-
         Peak_68_Significant = significance_marker,
-
         stringsAsFactors = FALSE
 
       )
@@ -676,8 +632,6 @@ make_irf_summary_table <- function(
       counter <- counter + 1
     }
   }
-
-
   # ------------------------------------------------------------
   # 5. Combine results
   # ------------------------------------------------------------
@@ -685,11 +639,8 @@ make_irf_summary_table <- function(
   summary_table <- dplyr::bind_rows(
     results
   )
-
-
   # ------------------------------------------------------------
   # 6. Return table
   # ------------------------------------------------------------
-
   return(summary_table)
 }
