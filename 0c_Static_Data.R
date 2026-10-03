@@ -4,15 +4,13 @@
 #============================================================================#
 # This was used to extract files for KIX weights directly from riksbanken's
 # XLSX file online. However, due to uncertainty regarding it's stability
-# I've decided to have it as static file. You can still donwlowad it as follows
+# (Links can change) I've decided to have it as static file. 
+# You can still donwlowad it as follows by copying directly from the XLSX
+# Online. And now you may be thinking: wouldn't it be better just to 
+# download and extract. Yes, but I now know how to export data directly on
+# R without downloading it as a file, which is good I guess.
 
-#Requires the package readxl
-# install.packages(readxl)
-library(readxl)
-library(tidyverse)
-library(tsibble)
-library(readexcel)
-
+dir.create( "0_Raw_Data", showWarnings = FALSE) # Create Directory.
 
 # Extract Weights directly from XLSX file made available by Riksbank.
 url_kix_weights <- paste0(

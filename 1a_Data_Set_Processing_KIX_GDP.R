@@ -5,7 +5,7 @@
 #Rikbankens uses KIX Weighted GDP (Series ForeignGDPisatrade-weightedaverageof
 #GDP,whereKIX-weightsareused) to denote the GDP weighted by KIX Weight. 
 #The series is not made readily available to the public so I decided to
-# consturct it myself. Thank you Rikbanks! Thank you!
+# construct it myself. Thank you Rikbanks! Thank you! What a waste of time.
 
 
 dir.create("1_Processed_Data/Data_Set_Columns", recursive = TRUE, showWarnings = FALSE)

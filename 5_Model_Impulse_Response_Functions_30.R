@@ -245,7 +245,7 @@ variables_durables <- c("GDP-D (log)", "Unemployment (pp)", "CPIF (log)", "Inter
  "DTA (pp)", "DSR (pp)", "LAI (pp)", "Savings (pp)", "REER (log)")
 
 
-for (p in 1:2) {
+for (p in 1:5) {
 
   model <- readRDS(
     paste0(
@@ -260,7 +260,7 @@ for (p in 1:2) {
     output_dir = "4_Output_Analysis/Model_Narrative/Durable",
     filename = paste0("IRF_Narrative_Lag_", p, ".png"),
     horizon = 30,
-    shock_indices = c(1, 2), # Note: Model was estimated on a different indices
+    shock_indices = c(4, 1), # Note: Model was estimated on a different indices
     shock_labels = c(
       "Monetary Policy Shock",
       "Adverse Macro Shock"
@@ -294,14 +294,14 @@ for (p in 1:2) {
 
 
 #=============================================================================#
-#                       [6]  MODEL MACRO DURABLE (NARRATIVE)
+#                       [6]  MODEL MACRO HABITUAL (NARRATIVE)
 
 variables_habituals  <- c("GDP-D (log)", "Unemployment (pp)", "CPIF (log)", "Interest (pp)", "Habituals (log)",
  "DTA (pp)", "DSR (pp)", "LAI (pp)", "Savings (pp)", "REER (log)")
 
 
 
-for (p in 1:2) {
+for (p in 1:5) {
 
   model <- readRDS(
     paste0(
@@ -316,7 +316,7 @@ for (p in 1:2) {
     output_dir = "4_Output_Analysis/Model_Narrative/Habitual",
     filename = paste0("IRF_Narrative_Lag_", p, ".png"),
     horizon = 30,
-    shock_indices = c(1, 2),
+    shock_indices = c(4, 1),
     shock_labels = c(
       "Monetary Policy Shock",
       "Adverse Macro Shock"

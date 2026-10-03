@@ -8,12 +8,19 @@ needed_pkgs <- c(
   "pxweb",      # API data extraction (SCB)
   "httr",       # HTTP requests
   "jsonlite",   # Parsing JSON payloads
+  "rjson",      # Alternative JSON handling
+  "rsdmx",      # SDMX data extraction
+  "readxl",     # Excel data input
+  
   #============================================================================#
   # Core Data Processing & Visualization
   "tidyverse",  # Loads dplyr, readr, tidyr, purrr, ggplot2, etc.
   "psych",      # Descriptive statistics
   "zoo",        # Infrastructure for regular/irregular time series
-  "xts",        # Extensible time series (used over base ts to facilitate date splitting in ADF tests)
+  "xts",        # Extensible time series
+  "tsibble",    # Modern time series data frames
+  "tempdisagg", # Temporal disaggregation techniques,
+  "readexcel",  # Allows you to read Excell!
   
   #============================================================================#
   # Econometric & Time Series Analysis
@@ -30,16 +37,12 @@ needed_pkgs <- c(
   "stats",      # Statistical calculations & random number generation
   "future",     # Parallel and distributed processing
   "abind",      # Combine multidimensional arrays
+  "BVAR",       # Used for MLL estimation
   "bsvars",     # Bayesian estimation of structural vector autoregressive models
   "bsvarSIGNs", # Add-on for BSVAR identified by sign, zero, and narrative restrictions
-  "rlang",       # Core language features and metaprogramming
-  
-  "tempdisagg",
-  "rsdmx"
+  "rlang"       # Core language features and metaprogramming
 )
 
-# Package citated using the function
-# citation("package_name_here")
 #============================================================================#
 # Install any missing packages automatically
 missing_pkgs <- needed_pkgs[!(needed_pkgs %in% installed.packages()[, "Package"])]
@@ -56,10 +59,10 @@ suppressPackageStartupMessages(
 
 # Note: The package for BSVAR and BSVARSIGN on github is often more up 
 # to date and was originally installed as such. 
-#remotes::install_github("bsvars/bsvarSIGNs", upgrade = "never")
-#remotes::install_github("bsvars/bsvarSIGNs", upgrade = "never")
+# remotes::install_github("bsvars/bsvars", upgrade = "never")
+# remotes::install_github("bsvars/bsvarSIGNs", upgrade = "never")
 
-# However the version used for the thesis (3.0  and 4.0) are now available on CRAN
+# However the version used for the thesis (3.0 and 4.0) are now available on CRAN
 # Do make sure your are up to date as well!
 # available.packages()["bsvars", "Version"]
 # available.packages()["bsvarSIGNs", "Version"]
@@ -69,21 +72,3 @@ suppressPackageStartupMessages(
 # packageVersion("bsvarSIGNs")
 #============================================================================#
 
-
-
-
-install.packages("tempdisagg")
-# Load tempdisagg and zoo (useful for handling date objects)
-
-library(tempdisagg)
-
-if (!require("rjson")) install.packages("rjson")
-
-
-
-
-install.packages("ecb")
-
-library(readxl)
-library(tidyverse)
-library(tsibble)
