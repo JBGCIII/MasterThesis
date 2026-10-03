@@ -20,7 +20,6 @@ needed_pkgs <- c(
   "xts",        # Extensible time series
   "tsibble",    # Modern time series data frames
   "tempdisagg", # Temporal disaggregation techniques,
-  "readexcel",  # Allows you to read Excell!
   
   #============================================================================#
   # Econometric & Time Series Analysis
