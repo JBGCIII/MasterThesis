@@ -1,32 +1,36 @@
 ###############################################################################
 ###################### HOUSING TRANSMISSION MODEL - HABITUAL ##################
 ###############################################################################
-#                           [1] MODEL SET UP
-# 1. Load up data
 
+# ==============================================================================
+# [1] Model Environment & Variable Setup
+# ==============================================================================
+
+# 1.1 Load seasonally adjusted macroeconomic and financial dataset
 bvar_data <- read.csv("2b_seasonally_adjusted_data.csv")
 
+# 1.2 Convert data frame into quarterly time series object (1996Q1 start)
 model_ts <- ts(
   bvar_data,
   start = c(1996, 1),
   frequency = 4
 )
 
-#----------------------------------------------------------------------------#
-# 2. Model with Housing Transmission variables (CPI omitted, Savings & DSR added)
+# 1.3 Select endogenous variables for Housing Transmission Model with Habitual Consumption
+# Note: CPI omitted; Household Savings Rate and Debt Service Ratio (DSR) added
 housing_cols <- c(
   "unemployment_rate", "policy_rate", "house_price_real_log",
   "debt_to_asset_ratio", "dsr_value", "liquid_asset_to_income_ratio",
   "saving_rate", "cons_habitual_log"
 )
+
+# 1.4 Cast selected time series to matrix representation for bsvarSIGN
 housing_data <- as.matrix(model_ts[, housing_cols])
 
-
+# 1.5 Store total number of endogenous variables in the system
 N_housing <- ncol(housing_data)
 
-#----------------------------------------------------------------------------#
-# 3. Variable Index Definitions
-# Variable Index Definitions
+# 1.6 Define individual variable string identifiers for sign restriction indexing
 unemp_idx   <- "unemployment_rate"
 policy_idx  <- "policy_rate"
 house_idx   <- "house_price_real_log"
@@ -36,14 +40,15 @@ liquid_idx  <- "liquid_asset_to_income_ratio"
 saving_idx  <- "saving_rate"
 cons_idx    <- "cons_habitual_log"
 
-#=============================================================================#
-#                           [2] SIGN RESTRICTIONS
-# 1. Length of IRF
+# ==============================================================================
+# [2] Sign Restriction Array & Prior Setup
+# ==============================================================================
+
+# 2.1 Set maximum impulse response horizon length (30 Quarters)
 H_total   <- 30
 N_housing <- length(housing_cols)
 
-#----------------------------------------------------------------------------#
-# 2. Create array with named dimensions
+# 2.2 Initialize 3D array for structural sign restrictions [Variables x Shocks x Horizon]
 sign_irf <- array(
   NA_real_,
   dim = c(N_housing, N_housing, H_total),
@@ -54,190 +59,117 @@ sign_irf <- array(
   )
 )
 
-#----------------------------------------------------------------------------#
-# Shocks 
+# 2.3 Map target structural shocks to corresponding variable indices
 mp_shock      <- policy_idx  # Monetary Policy Shock
-macro_shock   <- unemp_idx  # Adverse Macro / Aggregate Demand Shock
-housing_shock <- house_idx  # Adverse Housing Collateral / Wealth Shock
+macro_shock   <- unemp_idx   # Adverse Macro / Aggregate Demand Shock
+housing_shock <- house_idx   # Adverse Housing Collateral / Wealth Shock
 
-
-# Constrain restrictions for horizons 1 through 3 (Quarters 0, 1, 2)
+# 2.4 Impose structural sign restrictions across horizons 1 to 3 (Quarters 0, 1, and 2):
 for (h in 1:3) {
-  # 1. Monetary Policy Shock (Rate UP -> Labor market weakens / Unemployment UP)
+  # --- 1. Monetary Policy Shock ---
+  # Policy Rate increases (+1) -> Labor market weakens / Unemployment increases (+1)
   sign_irf[policy_idx, mp_shock, h] <-  1
-  sign_irf[unemp_idx,  mp_shock, h] <-  1  # Unemployment increases
- # sign_irf[dsr_idx,    mp_shock, h] <-  1  # Debt service ratio is left unrestricted
+  sign_irf[unemp_idx,  mp_shock, h] <-  1
+  # Note: Debt service ratio (dsr_idx) is left unrestricted
 
-  # 2. Adverse Macro / Demand Shock (Unemployment UP -> Rate CUTS)
-  sign_irf[unemp_idx,  macro_shock, h] <-  1  # Unemployment increases
-  sign_irf[policy_idx, macro_shock, h] <- -1  # Policy rate cut in response
+  # --- 2. Adverse Macro / Demand Shock ---
+  # Unemployment increases (+1) -> Policy rate cuts in response (-1)
+  sign_irf[unemp_idx,  macro_shock, h] <-  1
+  sign_irf[policy_idx, macro_shock, h] <- -1
 
-  # 3. Adverse Housing Market Shock (House Prices DOWN -> Balance sheet leverage UP)
+  # --- 3. Adverse Housing Market Shock ---
+  # Real House Prices drop (-1) -> Debt-to-Asset ratio / Balance sheet leverage increases (+1)
   sign_irf[house_idx,  housing_shock, h] <- -1
   sign_irf[dta_idx,    housing_shock, h] <-  1
 }
-  # Target consumption, liquidity (LAI), and precautionary savings are left UNRESTRICTED!
+# Target consumption, liquidity (LAI), and precautionary savings are left UNRESTRICTED
 
-# Vector of prior means for autoregressive parameters (FALSE = Random Walk I(1))
+# 2.5 Specify prior AR(1) means (FALSE = Random Walk prior for Non-Stationary I(1) levels)
 is_stationary <- rep(FALSE, N_housing)
 
-#=============================================================================#
-#              [3] MODEL SPECIFICATION AT DIFFERENT LAGS
+# ==============================================================================
+# [3] Estimation Loop Across Lag Lengths (p = 1:5)
+# ==============================================================================
 
+# 3.1 Locate COVID-19 shock observation index (2020Q2) for dummy/scaling correction
 raw_covid_idx <- which(bvar_data$quarter == "2020Q2")
+
+# 3.2 Configure CPU multi-core parallel processing
 n_cores       <- max(1, parallel::detectCores() - 2)
+
+# 3.3 Set seed for MCMC sampling reproducibility
 set.seed(12345)
 
-#------------------------------------------------------------------------------#
-#                               Model 1 (p = 1)
-#------------------------------------------------------------------------------#
-spec_housing_one_habitual <- specify_bsvarSIGN$new(
-  data         = housing_data,          
-  p            = 1,                     
-  sign_irf     = sign_irf,              
-  stationary   = is_stationary,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 1,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
+# 3.4 Create output directory for estimated model files
+output_dir <- "3_Model_Output/Model_Housing/Habitual"
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
-#------------------------------------------------------------------------------#
-#                               Model 2 (p = 2)
-#------------------------------------------------------------------------------#
-spec_housing_two_habitual <- specify_bsvarSIGN$new(
-  data         = housing_data,         
-  p            = 2,                    
-  sign_irf     = sign_irf,              
-  stationary   = is_stationary,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                 
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 2,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
+# 3.5 Vector of candidate lag orders
+lags <- 1:5
 
-#------------------------------------------------------------------------------#
-#                               Model 3 (p = 3)
-#------------------------------------------------------------------------------#
-spec_housing_three_habitual <- specify_bsvarSIGN$new(
-  data         = housing_data,          
-  p            = 3,                     
-  sign_irf     = sign_irf,              
-  stationary   = is_stationary,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 3,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-
-#------------------------------------------------------------------------------#
-#                               Model 4 (p = 4) 
-#------------------------------------------------------------------------------#
-spec_housing_four_habitual <- specify_bsvarSIGN$new(
-  data         = housing_data,         
-  p            = 4,                     
-  sign_irf     = sign_irf,              
-  stationary   = is_stationary,        
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 4,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-
-#------------------------------------------------------------------------------#
-#                               Model 5 (p = 5) 
-#------------------------------------------------------------------------------#
-spec_housing_five_habitual <- specify_bsvarSIGN$new(
-  data         = housing_data,         
-  p            = 5,                     
-  sign_irf     = sign_irf,              
-  stationary   = is_stationary,        
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 5,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-
-#=============================================================================#
-#                          [4] ESTIMATE HYPER-PARAMETERS
-
-spec_housing_one_habitual$estimate_hyper(S = 5000, burn_in = 1000)
-spec_housing_two_habitual$estimate_hyper(S = 5000, burn_in = 1000)
-spec_housing_three_habitual$estimate_hyper(S = 5000, burn_in = 1000)
-spec_housing_four_habitual$estimate_hyper(S = 5000, burn_in = 1000)
-spec_housing_five_habitual$estimate_hyper(S = 5000, burn_in = 1000)
-
-#=============================================================================#
-#                          [5] RUN MODEL
-
-estimate_housing_habitual_1 <- estimate(spec_housing_one_habitual, S = 4000, thin = 1)
-estimate_housing_habitual_2 <- estimate(spec_housing_two_habitual, S = 4000, thin = 1)
-estimate_housing_habitual_3 <- estimate(spec_housing_three_habitual, S = 4000, thin = 1)
-estimate_housing_habitual_4 <- estimate(spec_housing_four_habitual, S = 4000, thin = 1)
-estimate_housing_habitual_5 <- estimate(spec_housing_five_habitual, S = 4000, thin = 1)
-
-#=============================================================================#
-#                          [6] SAVE ESTIMATED MODELS
-#=============================================================================#
-
-dir.create("3_Model_Output/Model_Housing/Habitual", recursive = TRUE, showWarnings = FALSE)
-
-saveRDS(estimate_housing_habitual_1, file = "3_Model_Output/Model_Housing/Habitual/housing_habitual_p1.rds")
-saveRDS(estimate_housing_habitual_2, file = "3_Model_Output/Model_Housing/Habitual/housing_habitual_p2.rds")
-saveRDS(estimate_housing_habitual_3, file = "3_Model_Output/Model_Housing/Habitual/housing_habitual_p3.rds")
-saveRDS(estimate_housing_habitual_4, file = "3_Model_Output/Model_Housing/Habitual/housing_habitual_p4.rds")
-saveRDS(estimate_housing_habitual_5, file = "3_Model_Output/Model_Housing/Habitual/housing_habitual_p5.rds")
-
-#=============================================================================#
-#                          [7] STABILITY DIAGNOSTIC
-#=============================================================================#
-
-ev_one   <- check_posterior_stability(estimate_housing_habitual_1, p = 1)
-ev_two   <- check_posterior_stability(estimate_housing_habitual_2, p = 2)
-ev_three <- check_posterior_stability(estimate_housing_habitual_3, p = 3)
-ev_four  <- check_posterior_stability(estimate_housing_habitual_4, p = 4)
-ev_five  <- check_posterior_stability(estimate_housing_habitual_5, p = 5)
-
-stability_diagnostics <- data.frame(
-  Model = paste0("Model ", 1:5),
-  Pct_Stable = c(
-    mean(ev_one < 1) * 100,
-    mean(ev_two < 1) * 100,
-    mean(ev_three < 1) * 100,
-    mean(ev_four < 1) * 100,
-    mean(ev_five < 1) * 100
-  ),
-  Median_Rho = c(
-    median(ev_one),
-    median(ev_two),
-    median(ev_three),
-    median(ev_four),
-    median(ev_five)
-  ),
-  P95_Rho = c(
-    quantile(ev_one, .95),
-    quantile(ev_two, .95),
-    quantile(ev_three, .95),
-    quantile(ev_four, .95),
-    quantile(ev_five, .95)
-  ),
-  Max_Rho = c(
-    max(ev_one),
-    max(ev_two),
-    max(ev_three),
-    max(ev_four),
-    max(ev_five)
+# 3.6 Loop: Model Specification, Hyperparameter Estimation, MCMC Sampling & Model Disk Saving
+for (p in lags) {
+  # 3.6.1 Construct bsvarSIGN specification object 
+  spec <- specify_bsvarSIGN$new(
+    data         = housing_data,
+    p            = p,
+    sign_irf     = sign_irf,
+    stationary   = is_stationary,
+    hyper_lambda = TRUE,
+    hyper_mu     = TRUE,
+    hyper_delta  = TRUE,
+    hyper_psi    = FALSE,
+    hyper_covid  = raw_covid_idx - p, # Adjust COVID-19 shock index for lag length
+    mc.cores     = n_cores
   )
-)
+  
+  # 3.6.2 Estimate posterior hyperparameters via empirical Bayes / MCMC (5000 iterations)
+  spec$estimate_hyper(S = 5000, burn_in = 1000)
+  
+  # 3.6.3 Estimate Bayesian VAR model parameters (4000 posterior draws)
+  fit <- estimate(spec, S = 4000, thin = 1)
+  
+  # 3.6.4 Save fit object to RDS file
+  saveRDS(fit, file.path(output_dir, sprintf("housing_habitual_p%d.rds", p)))
+  
+  # 3.6.5 Free allocated RAM memory after each model estimation
+  rm(spec, fit)
+  gc()
+}
 
-write.csv(stability_diagnostics, file = "3_Model_Output/Model_Housing/Habitual/posterior_stability_summary.csv", row.names = FALSE)
+# ==============================================================================
+# [4] Model Stability Diagnostics & Summary Export
+# ==============================================================================
+
+# 4.1 Reload saved model fit objects and compute eigenvalue posterior stability metrics
+stability_list <- lapply(lags, function(p) {
+  # 4.1.1 Read stored RDS model fit from disk
+  model_file <- file.path(output_dir, sprintf("housing_habitual_p%d.rds", p))
+  fit <- readRDS(model_file)
+  
+  # 4.1.2 Compute companion matrix maximum eigenvalues across posterior draws
+  ev <- check_posterior_stability(fit, p = p)
+  
+  # 4.1.3 Clear model fit from memory
+  rm(fit)
+  gc()
+  
+  # 4.1.4 Return summary metrics dataframe for lag order p
+  data.frame(
+    Model      = paste0("Model ", p),
+    Pct_Stable = mean(ev < 1) * 100,
+    Median_Rho = median(ev),
+    P95_Rho    = quantile(ev, 0.95),
+    Max_Rho    = max(ev)
+  )
+})
+
+# 4.2 Combine list of stability metrics into a unified summary data frame
+stability_diagnostics <- do.call(rbind, stability_list)
+
+# 4.3 Export stability diagnostic metrics to CSV
+write.csv(
+  stability_diagnostics,
+  file = file.path(output_dir, "posterior_stability_summary.csv"),
+  row.names = FALSE
+)

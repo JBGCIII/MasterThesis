@@ -1,5 +1,5 @@
 ###############################################################################
-############################# CONSUMPTION DURABLE ############################
+############################# CONSUMPTION DURABLE #############################
 ###############################################################################
 #                               [1] MODEL SET UP
 # 1. Load up data
@@ -130,112 +130,95 @@ narrative_mp <- specify_narrative(
 # Combine narratives into a list
 narrative_list <- list(narrative_gfc, narrative_mp)
 
-
 #=============================================================================#
-#                         [4] MODEL SPECIFICATION
+#              [4] MODEL SPECIFICATION AT DIFFERENT LAGS
+#=============================================================================#
+
 raw_covid_idx <- which(bvar_data$quarter == "2020Q2")
-n_cores <- max(1, parallel::detectCores() - 2)
+n_cores       <- max(1, parallel::detectCores() - 2)
 set.seed(12345)
 
+output_dir <- "3_Model_Output/Model_Narrative/Durable"
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
-#------------------------------------------------------------------------------#
-#                                 Model 1 (p = 1)
-#------------------------------------------------------------------------------#
-spec_narrative_one_durable <- specify_bsvarSIGN$new(
-  data         = domestic_data,          
-  p            = 1,                     
-  sign_irf     = sign_irf,               
-  stationary   = is_stationary, 
-  sign_narrative = narrative_list,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx -1,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-
-#------------------------------------------------------------------------------#
-#                                 Model 2 (p = 2)
-#------------------------------------------------------------------------------#
-spec_narrative_two_durable <- specify_bsvarSIGN$new(
-  data         = domestic_data,          
-  p            = 2,                     
-  sign_irf     = sign_irf,               
-  stationary   = is_stationary, 
-  sign_narrative = narrative_list,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx -2,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
+lags <- 1:5
 
 #=============================================================================#
-#                          [4]  ESTIMATE HYPER-PARAMETER
-
-spec_narrative_one_durable$estimate_hyper(S = 5000, burn_in = 1000)
-spec_narrative_two_durable$estimate_hyper(S = 5000, burn_in = 1000)
-
-#=============================================================================#
-#                          [5]  RUN MODEL
-
-estimate_narrative_durable_1 <- estimate(spec_narrative_one_durable, S = 4000, thin = 1)
-
-# Model Run Start 21:49. End 02:04
-estimate_narrative_durable_2 <- estimate(spec_narrative_two_durable, S = 4000, thin = 1)
-
-#=============================================================================#
-#                          [6]  SAVE ESTIMATED MODELS
+#              [4-6] SPECIFY, ESTIMATE, SAVE & CLEAR CACHE
 #=============================================================================#
 
-dir.create("3_Model_Output/Model_Narrative/Durable", recursive = TRUE, showWarnings = FALSE)
-
-
-saveRDS(estimate_narrative_durable_1, file = "3_Model_Output/Model_Narrative/Durable/narrative_durable_p1.rds")
-saveRDS(estimate_narrative_durable_2, file = "3_Model_Output/Model_Narrative/Durable/narrative_durable_p2.rds")
-
-#=============================================================================#
-#                          [6]  SAVE ESTIMATED MODELS
-#=============================================================================#
-
-
-estimate_narrative_durable_1 <- readRDS("3_Model_Output/Model_Narrative/Durable/narrative_durable_p1.rds")
-estimate_narrative_durable_2 <- readRDS("3_Model_Output/Model_Narrative/Durable/narrative_durable_p2.rds")
-
-
-
-ev_one    <- check_posterior_stability(estimate_narrative_durable_1, p = 1)
-ev_two <- check_posterior_stability(estimate_narrative_durable_2, p = 2)
-
-
-stability_diagnostics <- data.frame(
-  Model = paste0("Model ", 1:2),
-  Pct_Stable = c(
-    mean(ev_one < 1) * 100,
-    mean(ev_two < 1) * 100
-  ),
-  Median_Rho = c(
-    median(ev_one),
-    median(ev_two)
-  ),
-  P95_Rho = c(
-    quantile(ev_one, .95),
-    quantile(ev_two, .95)
-  ),
-  Max_Rho = c(
-    max(ev_one),
-    max(ev_two)
+for (p in lags) {
+  # 1. Specify model
+  spec <- specify_bsvarSIGN$new(
+    data           = domestic_data,
+    p              = p,
+    sign_irf       = sign_irf,
+    stationary     = is_stationary,
+    sign_narrative = narrative_list,
+    hyper_lambda   = TRUE,
+    hyper_mu       = TRUE,
+    hyper_delta    = TRUE,
+    hyper_psi      = FALSE,
+    hyper_covid    = raw_covid_idx - p, # Lenza & Primiceri scaling
+    mc.cores       = n_cores
   )
+  
+  # 2. Estimate Hyper-parameters
+  spec$estimate_hyper(S = 5000, burn_in = 1000)
+  
+  # 3. Estimate Model
+  fit <- estimate(spec, S = 4000, thin = 1)
+  
+  # 4. Save Model
+  saveRDS(fit, file = file.path(output_dir, sprintf("narrative_durable_p%d.rds", p)))
+  
+  # Clear memory for this iteration
+  rm(spec, fit)
+  gc()
+}
+
+# Clear workspace cache before diagnostic phase
+gc()
+
+#=============================================================================#
+#              [6] STABILITY DIAGNOSTIC & DIM CHECKS (RELOAD FROM DISK)
+#=============================================================================#
+
+stability_list <- lapply(lags, function(p) {
+  # Reload model from disk
+  model_file <- file.path(output_dir, sprintf("narrative_durable_p%d.rds", p))
+  fit <- readRDS(model_file)
+  
+  # Inspect dimensions of posterior draws (optional diagnostic check)
+  cat(sprintf("--- Dimensions of posterior$B for Model p = %d ---\n", p))
+  print(dim(fit$posterior$B))
+  
+  # Compute stability metrics
+  ev <- check_posterior_stability(fit, p = p)
+  
+  # Free RAM immediately after evaluation
+  rm(fit)
+  gc()
+  
+  # Build summary row
+  data.frame(
+    Model      = paste0("Model ", p),
+    Pct_Stable = mean(ev < 1) * 100,
+    Median_Rho = median(ev),
+    P95_Rho    = quantile(ev, 0.95),
+    Max_Rho    = max(ev)
+  )
+})
+
+# Combine summary table
+stability_diagnostics <- do.call(rbind, stability_list)
+
+# Export summary CSV
+write.csv(
+  stability_diagnostics,
+  file = file.path(output_dir, "posterior_stability_summary.csv"),
+  row.names = FALSE
 )
-
-
-
-# Export to CSV (row.names = FALSE removes the 1,2,3... index column)
-write.csv(stability_diagnostics, file = "3_Model_Output/Model_narrative/Durable/posterior_stability_summary.csv", row.names = FALSE)
-
-
 
 
 

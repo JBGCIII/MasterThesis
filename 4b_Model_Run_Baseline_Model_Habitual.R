@@ -92,7 +92,7 @@ for (h in 1:3) {
 is_stationary <- c(  
   # Domestic Variables (9)
   FALSE,  # gdp_se_log (Non-Stationary I(1))
-  FALSE, # unemployment_rate (Non-Stationary I(1)
+  FALSE,  # unemployment_rate (Non-Stationary I(1)
   FALSE,  # cpi_log (Non-Stationary I(1))
   FALSE,  # policy_rate (Non-Stationary I(1))
   FALSE,  # target_cons [cons_habitual_log / cons_durable_log] (Non-Stationary I(1))
@@ -100,177 +100,90 @@ is_stationary <- c(
   FALSE,  # dsr_value (Non-Stationary / Conflicting I(1))
   FALSE,  # liquid_asset_to_income_ratio (Non-Stationary I(1))
   FALSE,  # saving_rate (Non-Stationary I(1))
-  FALSE
+  FALSE   # REER (Non-Stationary I(1))
 )
 
 #=============================================================================#
-#                   [3] MODEL SPECIFICATION AT DIFFERENT LAGS
+#              [3] MODEL SPECIFICATION AT DIFFERENT LAGS
+#=============================================================================#
 
 raw_covid_idx <- which(bvar_data$quarter == "2020Q2")
-n_cores <- max(1, parallel::detectCores() - 2)
+n_cores       <- max(1, parallel::detectCores() - 2)
 set.seed(12345)
-#------------------------------------------------------------------------------#
-#                                 Model 1 (p = 1)
-#------------------------------------------------------------------------------#
 
-spec_baseline_one_habitual <- specify_bsvarSIGN$new(
-  data         = domestic_data,          
-  p            = 1,                     
-  sign_irf     = sign_irf,               
-  stationary   = is_stationary,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx -1,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
+output_dir <- "3_Model_Output/Model_Baseline/Durable"
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
-#------------------------------------------------------------------------------#
-#                              Model 2 (p = 2)
-#------------------------------------------------------------------------------#
-
-spec_baseline_two_habitual <- specify_bsvarSIGN$new(
-  data         = domestic_data,         
-  p            = 2,                   
-  sign_irf     = sign_irf,               
-  stationary   = is_stationary,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                 
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 2,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-
-#------------------------------------------------------------------------------#
-#                              Model 3 (p = 3)
-#------------------------------------------------------------------------------#
-
-spec_baseline_three_habitual <- specify_bsvarSIGN$new(
-  data         = domestic_data,          # 9 domestic variables
-  p            = 3,                      # p = 2 lags
-  sign_irf     = sign_irf,               # 13 x 13 x 20 array
-  stationary   = is_stationary,          # Length 13 vector
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  # Kept FALSE for numeric stability
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 3,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-
-
-#------------------------------------------------------------------------------#
-#                              Model 4 (p = 4) 
-#------------------------------------------------------------------------------#
-
-spec_baseline_four_habitual <- specify_bsvarSIGN$new(
-  data         = domestic_data,         
-  p            = 4,                      
-  sign_irf     = sign_irf,              
-  stationary   = is_stationary,        
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 4,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-
-
-#------------------------------------------------------------------------------#
-#                              Model 5 (p = 5) 
-#------------------------------------------------------------------------------#
-
-spec_baseline_five_habitual <- specify_bsvarSIGN$new(
-  data         = domestic_data,         
-  p            = 5,                      
-  sign_irf     = sign_irf,              
-  stationary   = is_stationary,        
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 5,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-#=============================================================================#
-#                          [4]  ESTIMATE HYPER-PARAMETER
-
-spec_baseline_one_habitual$estimate_hyper(S = 5000, burn_in = 1000)
-spec_baseline_two_habitual$estimate_hyper(S = 5000, burn_in = 1000)
-spec_baseline_three_habitual$estimate_hyper(S = 5000, burn_in = 1000)
-spec_baseline_four_habitual$estimate_hyper(S = 5000, burn_in = 1000)
-spec_baseline_five_habitual$estimate_hyper(S = 5000, burn_in = 1000)
-
+lags <- 1:5
 
 #=============================================================================#
-#                          [5]  RUN MODEL
-
-estimate_baseline_habitual_1 <- estimate(spec_baseline_one_habitual, S = 4000, thin = 1)
-estimate_baseline_habitual_2 <- estimate(spec_baseline_two_habitual, S = 4000, thin = 1)
-estimate_baseline_habitual_3 <- estimate(spec_baseline_three_habitual, S = 4000, thin = 1)
-estimate_baseline_habitual_4 <- estimate(spec_baseline_four_habitual, S = 4000, thin = 1)
-estimate_baseline_habitual_5 <- estimate(spec_baseline_five_habitual, S = 4000, thin = 1)
-
-
-#=============================================================================#
-#                          [6]  SAVE ESTIMATED MODELS
+#              [4-6] SPECIFY, ESTIMATE, SAVE & CLEAR CACHE
 #=============================================================================#
 
-dir.create("3_Model_Output/Model_Baseline/Habitual", recursive = TRUE, showWarnings = FALSE)
-
-
-saveRDS(estimate_baseline_habitual_1, file = "3_Model_Output/Model_Baseline/Habitual/baseline_habitual_p1.rds")
-saveRDS(estimate_baseline_habitual_2, file = "3_Model_Output/Model_Baseline/Habitual/baseline_habitual_p2.rds")
-saveRDS(estimate_baseline_habitual_3, file = "3_Model_Output/Model_Baseline/Habitual/baseline_habitual_p3.rds")
-saveRDS(estimate_baseline_habitual_4, file = "3_Model_Output/Model_Baseline/Habitual/baseline_habitual_p4.rds")
-saveRDS(estimate_baseline_habitual_5, file = "3_Model_Output/Model_Baseline/Habitual/baseline_habitual_p5.rds")
-
-
-#=============================================================================#
-#                          [7]   STABILITY DIAGNOSTIC
-#=============================================================================#
-
-ev_one    <- check_posterior_stability(estimate_baseline_habitual_1, p = 1)
-ev_two <- check_posterior_stability(estimate_baseline_habitual_2, p = 2)
-ev_three   <- check_posterior_stability(estimate_baseline_habitual_3, p = 3)
-ev_four <- check_posterior_stability(estimate_baseline_habitual_4, p = 4)
-ev_five  <- check_posterior_stability(estimate_baseline_habitual_5, p = 5)
-
-
-stability_diagnostics <- data.frame(
-  Model = paste0("Model ", 1:5),
-  Pct_Stable = c(
-    mean(ev_one < 1) * 100,
-    mean(ev_two < 1) * 100,
-    mean(ev_three < 1) * 100,
-    mean(ev_four < 1) * 100,
-    mean(ev_five < 1) * 100
-  ),
-  Median_Rho = c(
-    median(ev_one),
-    median(ev_two),
-    median(ev_three),
-    median(ev_four),
-    median(ev_five)
-  ),
-  P95_Rho = c(
-    quantile(ev_one, .95),
-    quantile(ev_two, .95),
-    quantile(ev_three, .95),
-    quantile(ev_four, .95),
-    quantile(ev_five, .95)
-  ),
-  Max_Rho = c(
-    max(ev_one),
-    max(ev_two),
-    max(ev_three),
-    max(ev_four),
-    max(ev_five)
+for (p in lags) {
+  # 1. Specify model
+  spec <- specify_bsvarSIGN$new(
+    data         = domestic_data,
+    p            = p,
+    sign_irf     = sign_irf,
+    stationary   = is_stationary,
+    hyper_lambda = TRUE,
+    hyper_mu     = TRUE,
+    hyper_delta  = TRUE,
+    hyper_psi    = FALSE,
+    hyper_covid  = raw_covid_idx - p, # Lenza & Primiceri scaling
+    mc.cores     = n_cores
   )
-)
+  
+  # 2. Estimate Hyper-parameters
+  spec$estimate_hyper(S = 5000, burn_in = 1000)
+  
+  # 3. Estimate Model
+  fit <- estimate(spec, S = 4000, thin = 1)
+  
+  # 4. Save Model
+  saveRDS(fit, file = file.path(output_dir, sprintf("baseline_durable_p%d.rds", p)))
+  
+  # Clear memory for this iteration
+  rm(spec, fit)
+  gc()
+}
 
-# Export to CSV (row.names = FALSE removes the 1,2,3... index column)
-write.csv(stability_diagnostics, file = "3_Model_Output/Model_Baseline/Habitual/posterior_stability_summary.csv", row.names = FALSE)
+# Clear workspace cache before stability analysis
+gc()
+
+#=============================================================================#
+#              [7] STABILITY DIAGNOSTIC (RELOAD FROM DISK)
+#=============================================================================#
+
+stability_list <- lapply(lags, function(p) {
+  # Reload model from disk
+  model_file <- file.path(output_dir, sprintf("baseline_durable_p%d.rds", p))
+  fit <- readRDS(model_file)
+  
+  # Compute stability metrics
+  ev <- check_posterior_stability(fit, p = p)
+  
+  # Free RAM immediately after evaluation
+  rm(fit)
+  gc()
+  
+  # Build summary row
+  data.frame(
+    Model      = paste0("Model ", p),
+    Pct_Stable = mean(ev < 1) * 100,
+    Median_Rho = median(ev),
+    P95_Rho    = quantile(ev, 0.95),
+    Max_Rho    = max(ev)
+  )
+})
+
+# Combine summary table
+stability_diagnostics <- do.call(rbind, stability_list)
+
+# Export to CSV
+write.csv(
+  stability_diagnostics,
+  file = file.path(output_dir, "posterior_stability_summary.csv"),
+  row.names = FALSE
+)

@@ -123,202 +123,94 @@ is_stationary <- c(
 
 
 #=============================================================================#
-#                 [3] MODEL SPECIFICATION AT DIFFERENT LAGS
+#              [3] MODEL SPECIFICATION AT DIFFERENT LAGS
+#=============================================================================#
 
 raw_covid_idx <- which(bvar_data$quarter == "2020Q2")
-n_cores <- max(1, parallel::detectCores() - 2)
-
+n_cores       <- max(1, parallel::detectCores() - 2)
 set.seed(12345)
 
-#------------------------------------------------------------------------------#
-#                              Model 1 (p = 1)
-#------------------------------------------------------------------------------#
+output_dir <- "3_Model_Output/Model_Foreign/Habitual"
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
-spec_foreign_one <- specify_bsvarSIGN$new(
-  data         = domestic_data,          
-  p            = 1,                      
-  sign_irf     = sign_irf,               
-  foreign      = foreign_data,           
-  stationary   = is_stationary,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 1,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-
-#------------------------------------------------------------------------------#
-#                                 Model 2 (p = 2)
-#------------------------------------------------------------------------------#
-
-spec_foreign_two <- specify_bsvarSIGN$new(
-  data         = domestic_data,          
-  p            = 2,                      
-  sign_irf     = sign_irf,               
-  foreign      = foreign_data,           
-  stationary   = is_stationary,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 2,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-
-#------------------------------------------------------------------------------#
-#                                 Model 3 (p = 3)
-#------------------------------------------------------------------------------#
-
-spec_foreign_three <- specify_bsvarSIGN$new(
-  data         = domestic_data,          
-  p            = 3,                      
-  sign_irf     = sign_irf,               
-  foreign      = foreign_data,           
-  stationary   = is_stationary,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 3,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-
-#------------------------------------------------------------------------------#
-#                                 Model 4 (p = 4)
-#------------------------------------------------------------------------------#
-
-spec_foreign_four <- specify_bsvarSIGN$new(
-  data         = domestic_data,          
-  p            = 4,                      
-  sign_irf     = sign_irf,               
-  foreign      = foreign_data,           
-  stationary   = is_stationary,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 4,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-#------------------------------------------------------------------------------#
-#                                 Model 5 (p = 5)
-#------------------------------------------------------------------------------#
-
-spec_foreign_five <- specify_bsvarSIGN$new(
-  data         = domestic_data,          
-  p            = 5,                      
-  sign_irf     = sign_irf,               
-  foreign      = foreign_data,           
-  stationary   = is_stationary,          
-  hyper_lambda = TRUE,
-  hyper_mu     = TRUE,                  
-  hyper_delta  = TRUE,
-  hyper_psi    = FALSE,
-  hyper_covid  = raw_covid_idx - 5,   # Lenza & Primiceri scaling
-  mc.cores     = n_cores
-)
-
+lags <- 1:5
 
 #=============================================================================#
-#                          [4]  ESTIMATE HYPER-PARAMETER
-
-spec_foreign_one$estimate_hyper(S = 5000, burn_in = 1000)
-spec_foreign_two$estimate_hyper(S = 5000, burn_in = 1000)
-spec_foreign_three$estimate_hyper(S = 5000, burn_in = 1000)
-spec_foreign_four$estimate_hyper(S = 5000, burn_in = 1000)
-spec_foreign_five$estimate_hyper(S = 5000, burn_in = 1000)
-
-
+#              [4-6] SPECIFY, ESTIMATE, SAVE & CLEAR CACHE
 #=============================================================================#
-#                          [5]  RUN MODEL
 
-estimate_foreign_habitual_1 <- estimate(spec_foreign_one, S = 4000, thin = 1)
-estimate_foreign_habitual_2 <- estimate(spec_foreign_two, S = 4000, thin = 1)
-estimate_foreign_habitual_3 <- estimate(spec_foreign_three, S = 4000, thin = 1)
-estimate_foreign_habitual_4 <- estimate(spec_foreign_four, S = 4000, thin = 1)
-estimate_foreign_habitual_5 <- estimate(spec_foreign_five, S = 4000, thin = 1)
-
-
-#=============================================================================#
-#                          [6]  SAVE ESTIMATED MODELS
-
-dir.create("3_Model_Output/Model_Foreign/Habitual", recursive = TRUE, showWarnings = FALSE)
-
-
-saveRDS(estimate_foreign_habitual_1, file = "3_Model_Output/Model_Foreign/Habitual/foreign_habitual_p1.rds")
-saveRDS(estimate_foreign_habitual_2, file = "3_Model_Output/Model_Foreign/Habitual/foreign_habitual_p2.rds")
-saveRDS(estimate_foreign_habitual_3, file = "3_Model_Output/Model_Foreign/Habitual/foreign_habitual_p3.rds")
-saveRDS(estimate_foreign_habitual_4, file = "3_Model_Output/Model_Foreign/Habitual/foreign_habitual_p4.rds")
-saveRDS(estimate_foreign_habitual_5, file = "3_Model_Output/Model_Foreign/Habitual/foreign_habitual_p5.rds")
-
-
-#=============================================================================#
-#                          [6]   STABILITY DIAGNOSTIC
-
-ev_one    <- check_posterior_stability(estimate_foreign_habitual_1, p = 1)
-ev_two <- check_posterior_stability(estimate_foreign_habitual_2, p = 2)
-ev_three   <- check_posterior_stability(estimate_foreign_habitual_3, p = 3)
-ev_four <- check_posterior_stability(estimate_foreign_habitual_4, p = 4)
-ev_five  <- check_posterior_stability(estimate_foreign_habitual_5, p = 5)
-
-
-
-dim(estimate_foreign_habitual_1$posterior$B)
-dim(estimate_foreign_habitual_2$posterior$B)
-dim(estimate_foreign_habitual_3$posterior$B)
-dim(estimate_foreign_habitual_4$posterior$B)
-dim(estimate_foreign_habitual_5$posterior$B)
-
-
-
-
-stability_diagnostics <- data.frame(
-  Model = paste0("Model ", 1:5),
-  Pct_Stable = c(
-    mean(ev_one < 1) * 100,
-    mean(ev_two < 1) * 100,
-    mean(ev_three < 1) * 100,
-    mean(ev_four < 1) * 100,
-    mean(ev_five < 1) * 100
-  ),
-  Median_Rho = c(
-    median(ev_one),
-    median(ev_two),
-    median(ev_three),
-    median(ev_four),
-    median(ev_five)
-  ),
-  P95_Rho = c(
-    quantile(ev_one, .95),
-    quantile(ev_two, .95),
-    quantile(ev_three, .95),
-    quantile(ev_four, .95),
-    quantile(ev_five, .95)
-  ),
-  Max_Rho = c(
-    max(ev_one),
-    max(ev_two),
-    max(ev_three),
-    max(ev_four),
-    max(ev_five)
+for (p in lags) {
+  # 1. Specify model
+  spec <- specify_bsvarSIGN$new(
+    data         = domestic_data,
+    p            = p,
+    sign_irf     = sign_irf,
+    foreign      = foreign_data,
+    stationary   = is_stationary,
+    hyper_lambda = TRUE,
+    hyper_mu     = TRUE,
+    hyper_delta  = TRUE,
+    hyper_psi    = FALSE,
+    hyper_covid  = raw_covid_idx - p, # Lenza & Primiceri scaling
+    mc.cores     = n_cores
   )
+  
+  # 2. Estimate Hyper-parameters
+  spec$estimate_hyper(S = 5000, burn_in = 1000)
+  
+  # 3. Estimate Model
+  fit <- estimate(spec, S = 4000, thin = 1)
+  
+  # 4. Save Model
+  saveRDS(fit, file = file.path(output_dir, sprintf("foreign_habitual_p%d.rds", p)))
+  
+  # Clear memory for this iteration
+  rm(spec, fit)
+  gc()
+}
+
+# Clear workspace cache before diagnostic phase
+gc()
+
+#=============================================================================#
+#              [7] STABILITY DIAGNOSTIC & DIM CHECKS (RELOAD FROM DISK)
+#=============================================================================#
+
+stability_list <- lapply(lags, function(p) {
+  # Reload model from disk
+  model_file <- file.path(output_dir, sprintf("foreign_habitual_p%d.rds", p))
+  fit <- readRDS(model_file)
+  
+  # Inspect dimensions of posterior draws
+  cat(sprintf("--- Dimensions of posterior$B for Model p = %d ---\n", p))
+  print(dim(fit$posterior$B))
+  
+  # Compute stability metrics
+  ev <- check_posterior_stability(fit, p = p)
+  
+  # Free RAM immediately after evaluation
+  rm(fit)
+  gc()
+  
+  # Build summary row
+  data.frame(
+    Model      = paste0("Model ", p),
+    Pct_Stable = mean(ev < 1) * 100,
+    Median_Rho = median(ev),
+    P95_Rho    = quantile(ev, 0.95),
+    Max_Rho    = max(ev)
+  )
+})
+
+# Combine summary table
+stability_diagnostics <- do.call(rbind, stability_list)
+
+# Export summary CSV
+write.csv(
+  stability_diagnostics,
+  file = file.path(output_dir, "posterior_stability_summary.csv"),
+  row.names = FALSE
 )
 
-# Export to CSV (row.names = FALSE removes the 1,2,3... index column)
-write.csv(stability_diagnostics, file = "3_Model_Output/Model_Foreign/Habitual/posterior_stability_summary.csv", row.names = FALSE)
 
 
-
-
-
-
-
-
-# 1. Check the dimensions of the structural matrix or posterior draws (N x N x draws)
-dim(estimate_foreign_habitual_1$posterior$B)
-
-# 2. Extract column/variable names directly from the data matrix stored in the model
-colnames(estimate_foreign_habitual_1$last_draw$data$Y)
-
-length(variables_habituals)
